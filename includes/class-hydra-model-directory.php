@@ -90,11 +90,26 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 	/**
 	 * 声明全部条目统一支持的配置选项。
 	 *
+	 * 输入模态覆盖三种协议可传递的全部组合（需求匹配是精确集合比较，
+	 * 必须逐一枚举）；具体某个模型是否真支持由故障转移兜底——不支持的
+	 * 条目会请求失败并自动切换到下一个。
+	 *
 	 * @since 1.0.0
 	 *
 	 * @return array<int,SupportedOption>
 	 */
 	private function supported_options(): array {
+		$modality_combos = array(
+			array( ModalityEnum::text() ),
+			array( ModalityEnum::text(), ModalityEnum::image() ),
+			array( ModalityEnum::text(), ModalityEnum::audio() ),
+			array( ModalityEnum::text(), ModalityEnum::document() ),
+			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::audio() ),
+			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::document() ),
+			array( ModalityEnum::text(), ModalityEnum::audio(), ModalityEnum::document() ),
+			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::audio(), ModalityEnum::document() ),
+		);
+
 		return array(
 			new SupportedOption( OptionEnum::systemInstruction() ),
 			new SupportedOption( OptionEnum::maxTokens() ),
@@ -106,13 +121,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 			new SupportedOption( OptionEnum::outputSchema() ),
 			new SupportedOption( OptionEnum::functionDeclarations() ),
 			new SupportedOption( OptionEnum::customOptions() ),
-			new SupportedOption(
-				OptionEnum::inputModalities(),
-				array(
-					array( ModalityEnum::text() ),
-					array( ModalityEnum::text(), ModalityEnum::image() ),
-				)
-			),
+			new SupportedOption( OptionEnum::inputModalities(), $modality_combos ),
 			new SupportedOption(
 				OptionEnum::outputModalities(),
 				array( array( ModalityEnum::text() ) )

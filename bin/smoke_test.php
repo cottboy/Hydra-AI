@@ -85,9 +85,23 @@ assert_check( '留空密钥保持原值', 'sk-abc' === $cleaned2['api_key'] );
 
 /* ---------- 3. 可用性检查 ---------- */
 
-// null 表示选项原本不存在，用于测试后恢复现场。
+// 捕获现场并注册关闭时恢复：即使中途崩溃（Fatal Error）也不污染站点。
 $had_entries   = get_option( HYDRA_AI_OPTION, null );
 $had_connector = get_option( HYDRA_AI_CONNECTOR_KEY_OPTION, null );
+
+register_shutdown_function( static function () use ( $had_entries, $had_connector ): void {
+	if ( null === $had_entries ) {
+		delete_option( HYDRA_AI_OPTION );
+	} else {
+		update_option( HYDRA_AI_OPTION, $had_entries, false );
+	}
+	if ( null === $had_connector ) {
+		delete_option( HYDRA_AI_CONNECTOR_KEY_OPTION );
+	} else {
+		update_option( HYDRA_AI_CONNECTOR_KEY_OPTION, $had_connector, false );
+	}
+	delete_transient( 'hydra_ai_last_failover' );
+} );
 
 $availability = new Hydra_Availability();
 assert_check( '无条目无密钥时未配置', ! $availability->isConfigured() );
@@ -218,23 +232,127 @@ try {
 
 /* ---------- 5. 连通性测试入口 ---------- */
 
+$entries[1]['enabled'] = true; // 恢复一个启用条目，供模型目录与连通性测试使用。
 Hydra_Settings::save_entries( array( $entries[1] ) );
 $test_result = Hydra_Text_Model::test_entry( Hydra_Settings::get_entries()[0] );
 assert_check( 'test_entry 对可用端点成功', true === $test_result['ok'], $test_result['message'] );
 
-/* ---------- 恢复站点原始数据 ---------- */
+/* ---------- 6. 三协议文件输入构建 ---------- */
 
-if ( null === $had_entries ) {
-	delete_option( HYDRA_AI_OPTION );
-} else {
-	update_option( HYDRA_AI_OPTION, $had_entries, false );
+use WordPress\AiClient\Files\DTO\File;
+use WordPress\AiClient\Messages\DTO\Message;
+use WordPress\AiClient\Messages\DTO\MessagePart;
+use WordPress\AiClient\Messages\Enums\MessageRoleEnum;
+use WordPress\AiClient\Providers\Models\DTO\ModelConfig;
+
+/**
+ * 构建含文本与单个文件部件的用户消息。
+ *
+ * @param string $file 文件 URL 或 data URI。
+ * @param string $mime MIME 类型。
+ * @return array<int,Message>
+ */
+function file_prompt( string $file, string $mime ): array {
+	return array( new Message( MessageRoleEnum::user(), array(
+		new MessagePart( '看这个文件' ),
+		new MessagePart( new File( $file, $mime ) ),
+	) ) );
 }
-if ( null === $had_connector ) {
-	delete_option( HYDRA_AI_CONNECTOR_KEY_OPTION );
-} else {
-	update_option( HYDRA_AI_CONNECTOR_KEY_OPTION, $had_connector, false );
+
+/**
+ * 为指定协议构建请求参数（messages 或 input）。
+ *
+ * @param string             $protocol 协议 ID。
+ * @param array<int,Message> $prompt   消息列表。
+ * @return array<int,mixed>
+ */
+function build_for( string $protocol, array $prompt ): array {
+	$params = Hydra_Protocols::get( $protocol )->build_params(
+		$prompt,
+		ModelConfig::fromArray( array() ),
+		'm'
+	);
+
+	return isset( $params['messages'] ) ? $params['messages'] : $params['input'];
 }
-delete_transient( 'hydra_ai_last_failover' );
+
+// 内联图片：三种协议各自的图片载体（OpenAI 系传完整 data URI）。
+$png    = 'data:image/png;base64,AAAA';
+$chat   = build_for( 'chat', file_prompt( $png, 'image/png' ) );
+assert_check( 'Chat 内联图片转 image_url', $png === $chat[0]['content'][1]['image_url']['url'] );
+$resp   = build_for( 'responses', file_prompt( $png, 'image/png' ) );
+assert_check( 'Responses 内联图片转 input_image', $png === $resp[0]['content'][1]['image_url'] );
+$anthro = build_for( 'anthropic', file_prompt( $png, 'image/png' ) );
+assert_check( 'Anthropic 内联图片转 base64 源', 'AAAA' === $anthro[0]['content'][1]['source']['data'] );
+
+// 远程图片：OpenAI 系直接传 URL，Anthropic 传 url 源（均不下载）。
+$remote_png = 'http://127.0.0.1:8931/files/a.png';
+$chat   = build_for( 'chat', file_prompt( $remote_png, 'image/png' ) );
+assert_check( 'Chat 远程图片直传 URL', $remote_png === $chat[0]['content'][1]['image_url']['url'] );
+$anthro = build_for( 'anthropic', file_prompt( $remote_png, 'image/png' ) );
+assert_check( 'Anthropic 远程图片转 url 源', 'url' === $anthro[0]['content'][1]['source']['type'] );
+
+// 内联音频（WAV）：OpenAI 系转 input_audio；Anthropic 不支持音频。
+$wav = 'data:audio/wav;base64,QUFB';
+$chat = build_for( 'chat', file_prompt( $wav, 'audio/wav' ) );
+assert_check( 'Chat 内联音频转 input_audio(wav)', 'QUFB' === $chat[0]['content'][1]['input_audio']['data'] );
+$resp = build_for( 'responses', file_prompt( $wav, 'audio/wav' ) );
+assert_check( 'Responses 内联音频转 input_audio', 'QUFB' === $resp[0]['content'][1]['data'] );
+$anthro_throws = false;
+try {
+	build_for( 'anthropic', file_prompt( $wav, 'audio/wav' ) );
+} catch ( Throwable $e ) {
+	$anthro_throws = true;
+}
+assert_check( 'Anthropic 音频抛出走故障转移', $anthro_throws );
+
+// 远程音频：OpenAI 系自动下载转 base64（模拟服务端返回 hydra-mock-file-content）。
+$expected_b64 = base64_encode( 'hydra-mock-file-content' );
+$chat = build_for( 'chat', file_prompt( 'http://127.0.0.1:8931/files/a.mp3', 'audio/mpeg' ) );
+assert_check( 'Chat 远程音频自动下载内联(mp3)', $expected_b64 === $chat[0]['content'][1]['input_audio']['data'] );
+$resp = build_for( 'responses', file_prompt( 'http://127.0.0.1:8931/files/a.wav', 'audio/wav' ) );
+assert_check( 'Responses 远程音频自动下载内联(wav)', $expected_b64 === $resp[0]['content'][1]['data'] );
+
+// 文档：PDF 三协议行为，text/plain 仅 Anthropic 支持。
+$pdf = 'data:application/pdf;base64,UERG';
+$chat = build_for( 'chat', file_prompt( $pdf, 'application/pdf' ) );
+assert_check( 'Chat 内联 PDF 转 file 块', 'data:application/pdf;base64,UERG' === $chat[0]['content'][1]['file']['file_data'] );
+$resp = build_for( 'responses', file_prompt( $pdf, 'application/pdf' ) );
+assert_check( 'Responses 内联 PDF 转 input_file', 'UERG' === substr( (string) $resp[0]['content'][1]['file_data'], -4 ) );
+$anthro = build_for( 'anthropic', file_prompt( $pdf, 'application/pdf' ) );
+assert_check( 'Anthropic 内联 PDF 转 base64 源', 'application/pdf' === $anthro[0]['content'][1]['source']['media_type'] );
+
+$remote_pdf = 'http://127.0.0.1:8931/files/doc.pdf';
+$resp = build_for( 'responses', file_prompt( $remote_pdf, 'application/pdf' ) );
+assert_check( 'Responses 远程 PDF 直传 file_url', $remote_pdf === $resp[0]['content'][1]['file_url'] );
+$anthro = build_for( 'anthropic', file_prompt( $remote_pdf, 'application/pdf' ) );
+assert_check( 'Anthropic 远程 PDF 转 url 源', 'url' === $anthro[0]['content'][1]['source']['type'] );
+
+$txt = 'data:text/plain;base64,TVQ=';
+$anthro = build_for( 'anthropic', file_prompt( $txt, 'text/plain' ) );
+assert_check( 'Anthropic 内联纯文本文档', 'text/plain' === $anthro[0]['content'][1]['source']['media_type'] );
+$chat_throws = false;
+try {
+	build_for( 'chat', file_prompt( $txt, 'text/plain' ) );
+} catch ( Throwable $e ) {
+	$chat_throws = true;
+}
+assert_check( 'Chat 非法文档抛出走故障转移', $chat_throws );
+
+// 远程纯文本文档：Anthropic 自动下载转 base64。
+$anthro = build_for( 'anthropic', file_prompt( 'http://127.0.0.1:8931/files/note.txt', 'text/plain' ) );
+assert_check( 'Anthropic 远程纯文本自动下载内联', $expected_b64 === $anthro[0]['content'][1]['source']['data'] );
+
+// 需求匹配：带音频文件的提示词应命中 Hydra 模型元数据。
+$requirements = \WordPress\AiClient\Providers\Models\DTO\ModelRequirements::fromPromptData(
+	\WordPress\AiClient\Providers\Models\Enums\CapabilityEnum::textGeneration(),
+	file_prompt( $wav, 'audio/wav' ),
+	ModelConfig::fromArray( array() )
+);
+$metadata = ( new Hydra_Model_Directory() )->getModelMetadata( 'smoke-model' );
+assert_check( '音频输入命中 Hydra 模型需求匹配', $requirements->areMetBy( $metadata ) );
+
+/* ---------- 结束（现场由关闭回调恢复） ---------- */
 
 echo "\n";
 if ( $failures ) {

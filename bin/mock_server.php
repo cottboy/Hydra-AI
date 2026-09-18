@@ -8,6 +8,14 @@
  */
 
 $path = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+
+// 模拟远端文件下载：/files/ 路径返回确定性内容，供文件抓取测试使用。
+if ( str_contains( $path, '/files/' ) ) {
+	header( 'Content-Type: application/octet-stream' );
+	echo 'hydra-mock-file-content';
+	return;
+}
+
 header( 'Content-Type: application/json' );
 
 if ( str_contains( $path, 'chat/completions' ) ) {

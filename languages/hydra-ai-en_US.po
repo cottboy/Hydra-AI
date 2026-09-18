@@ -50,6 +50,14 @@ msgstr "Responses API"
 msgid "Responses API（OpenAI 官方）"
 msgstr "Responses API (official OpenAI)"
 
+#: includes/class-hydra-files.php:129
+msgid "下载远端文件失败：%s"
+msgstr "Failed to download the remote file: %s"
+
+#: includes/class-hydra-files.php:140
+msgid "下载远端文件失败：HTTP %d。"
+msgstr "Failed to download the remote file: HTTP %d."
+
 #: includes/class-hydra-admin.php:157
 msgid "优先级"
 msgstr "Priority"
@@ -141,11 +149,11 @@ msgstr "Drag to change priority"
 msgid "排序保存失败，请刷新页面重试。"
 msgstr "Failed to save the new order. Refresh the page and try again."
 
-#: includes/class-hydra-admin.php:516
+#: includes/class-hydra-admin.php:517
 msgid "排序数据与条目数量不一致。"
 msgstr "The order data does not match the number of entries."
 
-#: includes/class-hydra-admin.php:527
+#: includes/class-hydra-admin.php:528
 msgid "排序数据包含未知条目。"
 msgstr "The order data contains unknown entries."
 
@@ -157,7 +165,25 @@ msgstr "Actions"
 msgid "故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。"
 msgstr "Failover: requests are attempted in list order from top to bottom. Any failure (network error, authentication failure, invalid response, etc.) switches to the next provider."
 
-#: includes/class-hydra-admin.php:449
+#: includes/class-hydra-files.php:90
+msgid "文件 URL 无效。"
+msgstr "The file URL is invalid."
+
+#: includes/class-hydra-protocol-anthropic.php:265
+#: includes/class-hydra-protocol-anthropic.php:273
+#: includes/class-hydra-protocol-anthropic.php:308
+#: includes/class-hydra-protocol-chat.php:273
+#: includes/class-hydra-protocol-chat.php:280
+#: includes/class-hydra-protocol-responses.php:236
+#: includes/class-hydra-protocol-responses.php:243
+msgid "文件消息部件缺少文件数据。"
+msgstr "The file message part is missing file data."
+
+#: includes/class-hydra-admin.php:376
+msgid "文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。"
+msgstr "File input: the three protocols accept their native image, PDF, and audio formats. Remote files are downloaded and inlined automatically for protocols without URL support (25MB limit); unsupported types automatically fall back to the next provider."
+
+#: includes/class-hydra-admin.php:450
 msgid "最多支持 %d 个供应商条目。"
 msgstr "Up to %d provider entries are supported."
 
@@ -169,9 +195,9 @@ msgstr "Most recent failover (all attempts failed):"
 msgid "最近一次故障转移（已成功）："
 msgstr "Most recent failover (succeeded):"
 
-#: includes/class-hydra-protocol-anthropic.php:336
-#: includes/class-hydra-protocol-chat.php:334
-#: includes/class-hydra-protocol-responses.php:316
+#: includes/class-hydra-protocol-anthropic.php:402
+#: includes/class-hydra-protocol-chat.php:374
+#: includes/class-hydra-protocol-responses.php:336
 msgid "服务端返回了未知错误。"
 msgstr "The server returned an unknown error."
 
@@ -184,13 +210,13 @@ msgstr "No key set"
 msgid "未配置 API Key（条目与连接器中均未提供）。"
 msgstr "No API key configured (provided by neither the entry nor the connector)."
 
-#: includes/class-hydra-admin.php:392
+#: includes/class-hydra-admin.php:393
 msgid "权限不足。"
 msgstr "Insufficient permissions."
 
-#: includes/class-hydra-admin.php:433
-#: includes/class-hydra-admin.php:492
-#: includes/class-hydra-admin.php:552
+#: includes/class-hydra-admin.php:434
+#: includes/class-hydra-admin.php:493
+#: includes/class-hydra-admin.php:553
 msgid "条目不存在或已被删除。"
 msgstr "The entry does not exist or has been deleted."
 
@@ -199,7 +225,7 @@ msgstr "The entry does not exist or has been deleted."
 msgid "模型"
 msgstr "Model"
 
-#: includes/class-hydra-admin.php:376
+#: includes/class-hydra-admin.php:377
 msgid "每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。"
 msgstr "Each entry's model is exposed to the WordPress AI client under the Hydra AI provider and can be used directly by other plugins."
 
@@ -257,6 +283,29 @@ msgstr "Custom AI provider endpoints with Chat Completions, Responses, and Anthr
 msgid "设置"
 msgstr "Settings"
 
+#: includes/class-hydra-protocol-anthropic.php:341
+#: includes/class-hydra-protocol-chat.php:318
+#: includes/class-hydra-protocol-responses.php:284
+msgid "该协议不支持此输入文件类型：%s"
+msgstr "This protocol does not support this input file type: %s"
+
+#: includes/class-hydra-protocol-anthropic.php:288
+msgid "该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。"
+msgstr "Inline images for this protocol support JPEG, PNG, GIF, or WebP only."
+
+#: includes/class-hydra-protocol-anthropic.php:325
+msgid "该协议的文档输入仅支持 PDF 或纯文本。"
+msgstr "Document input for this protocol only supports PDF or plain text."
+
+#: includes/class-hydra-protocol-chat.php:303
+#: includes/class-hydra-protocol-responses.php:264
+msgid "该协议的文档输入仅支持 PDF。"
+msgstr "Document input for this protocol only supports PDF."
+
+#: includes/class-hydra-files.php:175
+msgid "该协议的音频输入仅支持 WAV 或 MP3 格式。"
+msgstr "Audio input for this protocol only supports WAV or MP3."
+
 #: includes/class-hydra-settings.php:120
 msgid "请填写供应商名称。"
 msgstr "Please enter the provider name."
@@ -272,6 +321,10 @@ msgstr "The request failed. Check your network and try again."
 #: includes/class-hydra-admin.php:173
 msgid "还没有供应商。点击右上角“添加供应商”，配置你的第一个 AI 端点。"
 msgstr "No providers yet. Click \"Add provider\" in the top right to configure your first AI endpoint."
+
+#: includes/class-hydra-files.php:148
+msgid "远端文件内容为空。"
+msgstr "The remote file is empty."
 
 #: includes/class-hydra-admin.php:101
 msgid "连接失败：%s"

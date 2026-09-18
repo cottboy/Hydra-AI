@@ -124,6 +124,18 @@ msgstr ""
             '连接失败：%s': 'Connection failed: %s',
             '连接成功。': 'Connection successful.',
             '连接成功：%s': 'Connected: %s',
+            '文件 URL 无效。': 'The file URL is invalid.',
+            '下载远端文件失败：%s': 'Failed to download the remote file: %s',
+            '下载远端文件失败：HTTP %d。': 'Failed to download the remote file: HTTP %d.',
+            '远端文件内容为空。': 'The remote file is empty.',
+            '该协议的音频输入仅支持 WAV 或 MP3 格式。': 'Audio input for this protocol only supports WAV or MP3.',
+            '文件消息部件缺少文件数据。': 'The file message part is missing file data.',
+            '该协议的文档输入仅支持 PDF。': 'Document input for this protocol only supports PDF.',
+            '该协议的文档输入仅支持 PDF 或纯文本。': 'Document input for this protocol only supports PDF or plain text.',
+            '该协议不支持此输入文件类型：%s': 'This protocol does not support this input file type: %s',
+            '该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。': 'Inline images for this protocol support JPEG, PNG, GIF, or WebP only.',
+            '文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。':
+                'File input: the three protocols accept their native image, PDF, and audio formats. Remote files are downloaded and inlined automatically for protocols without URL support (25MB limit); unsupported types automatically fall back to the next provider.',
         },
     ),
 }

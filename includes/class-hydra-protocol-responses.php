@@ -8,6 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
+use WordPress\AiClient\Common\Exception\RuntimeException;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessageRoleEnum;
@@ -169,10 +170,7 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			}
 
 			if ( $type->isFile() ) {
-				$file_item = $this->convert_file_part( $part );
-				if ( $file_item ) {
-					$content[] = $file_item;
-				}
+				$content[] = $this->convert_file_part( $part );
 				continue;
 			}
 
@@ -222,48 +220,70 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 	/**
 	 * 把文件部件转换为 Responses API 的输入内容项。
 	 *
-	 * @since 1.0.0
+	 * 支持图片（远程 URL 或 data URI）、音频（WAV/MP3，远端自动下载内联）
+	 * 与 PDF 文档（远端传 file_url，内联传 file_data）；其余类型抛出异常，
+	 * 由故障转移切换到支持的供应商条目。
+	 *
+	 * @since 1.0.1
 	 *
 	 * @param MessagePart $part 消息部件。
-	 * @return array<string,mixed>|null
+	 * @return array<string,mixed>
+	 * @throws RuntimeException 文件类型不受该协议支持时抛出。
 	 */
-	private function convert_file_part( MessagePart $part ): ?array {
+	private function convert_file_part( MessagePart $part ): array {
 		$file = $part->getFile();
 		if ( ! $file ) {
-			return null;
+			throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
 		}
 
-		if ( $file->isRemote() ) {
-			$url = $file->getUrl();
-			if ( ! $url ) {
-				return null;
-			}
-			if ( $file->isImage() ) {
-				return array(
-					'type'      => 'input_image',
-					'image_url' => $url,
-				);
-			}
-			return array(
-				'type'     => 'input_file',
-				'file_url' => $url,
-			);
-		}
-
-		$data_uri = $file->getDataUri();
-		if ( ! $data_uri ) {
-			return null;
-		}
 		if ( $file->isImage() ) {
+			// 图片：远端直接传 URL，内联传 data URI。
+			$url = $file->isRemote() ? $file->getUrl() : $file->getDataUri();
+			if ( ! $url ) {
+				throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
+			}
+
 			return array(
 				'type'      => 'input_image',
-				'image_url' => $data_uri,
+				'image_url' => $url,
 			);
 		}
-		return array(
-			'type'      => 'input_file',
-			'filename'  => 'file',
-			'file_data' => $data_uri,
+
+		if ( $file->isAudio() ) {
+			// 音频：Responses 协议仅接受内联 base64，远端文件自动下载。
+			return array(
+				'type'   => 'input_audio',
+				'data'   => Hydra_Files::to_base64( $file ),
+				'format' => Hydra_Files::openai_audio_format( $file ),
+			);
+		}
+
+		if ( $file->isDocument() ) {
+			// 文档：Responses 协议仅支持 PDF；远端传 URL，内联传 data URI。
+			if ( 'application/pdf' !== strtolower( $file->getMimeType() ) ) {
+				throw new RuntimeException( __( '该协议的文档输入仅支持 PDF。', 'hydra-ai' ) );
+			}
+
+			if ( $file->isRemote() ) {
+				return array(
+					'type'     => 'input_file',
+					'file_url' => (string) $file->getUrl(),
+				);
+			}
+
+			return array(
+				'type'      => 'input_file',
+				'filename'  => Hydra_Files::file_name( $file ),
+				'file_data' => (string) $file->getDataUri(),
+			);
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				/* translators: %s: MIME 类型。 */
+				__( '该协议不支持此输入文件类型：%s', 'hydra-ai' ),
+				$file->getMimeType()
+			)
 		);
 	}
 
