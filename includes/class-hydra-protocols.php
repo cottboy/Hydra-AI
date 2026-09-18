@@ -105,46 +105,4 @@ final class Hydra_Protocols {
 				return '';
 		}
 	}
-
-	/**
-	 * 获取协议默认模型占位符。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $protocol_id 协议 ID。
-	 * @return string
-	 */
-	public static function get_default_model( string $protocol_id ): string {
-		switch ( $protocol_id ) {
-			case 'chat':
-				return 'gpt-4o-mini';
-			case 'responses':
-				return 'gpt-4.1-mini';
-			case 'anthropic':
-				return 'claude-sonnet-4-5';
-			default:
-				return '';
-		}
-	}
-
-	/**
-	 * 获取协议的端点说明文案（可翻译）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $protocol_id 协议 ID。
-	 * @return string
-	 */
-	public static function get_endpoint_hint( string $protocol_id ): string {
-		switch ( $protocol_id ) {
-			case 'chat':
-				return __( '填写基础地址，最终请求 {端点}/chat/completions', 'hydra-ai' );
-			case 'responses':
-				return __( '填写基础地址，最终请求 {端点}/responses', 'hydra-ai' );
-			case 'anthropic':
-				return __( '填写基础地址，最终请求 {端点}/messages', 'hydra-ai' );
-			default:
-				return '';
-		}
-	}
 }

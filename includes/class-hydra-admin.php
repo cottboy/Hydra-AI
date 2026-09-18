@@ -79,20 +79,9 @@ class Hydra_Admin {
 	 * @return array<string,mixed>
 	 */
 	private function get_script_data(): array {
-		$defaults = array();
-		foreach ( Hydra_Settings::PROTOCOLS as $protocol ) {
-			$defaults[ $protocol ] = array(
-				'endpoint' => Hydra_Protocols::get_default_endpoint( $protocol ),
-				'model'    => Hydra_Protocols::get_default_model( $protocol ),
-				'hint'     => Hydra_Protocols::get_endpoint_hint( $protocol ),
-			);
-		}
-
 		return array(
 			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( self::NONCE_ACTION ),
-			'protocols'=> Hydra_Settings::PROTOCOLS,
-			'defaults' => $defaults,
 			'i18n'     => array(
 				'confirmDelete' => __( '确定要删除供应商“%s”吗？删除后不可恢复。', 'hydra-ai' ),
 				'saveFailed'    => __( '保存失败：%s', 'hydra-ai' ),
@@ -100,8 +89,6 @@ class Hydra_Admin {
 				'testSuccess'   => __( '连接成功：%s', 'hydra-ai' ),
 				'testFailed'    => __( '连接失败：%s', 'hydra-ai' ),
 				'keyExists'     => __( '已设置密钥', 'hydra-ai' ),
-				'keyFallback'   => __( '使用连接器密钥', 'hydra-ai' ),
-				'keyMissing'    => __( '未设置密钥', 'hydra-ai' ),
 				'networkError'  => __( '请求失败，请检查网络后重试。', 'hydra-ai' ),
 				'testing'       => __( '测试中…', 'hydra-ai' ),
 				'dialogAdd'     => __( '添加供应商', 'hydra-ai' ),
@@ -175,7 +162,6 @@ class Hydra_Admin {
 			<?php endif; ?>
 
 			<?php $this->render_dialog(); ?>
-			<?php $this->render_help(); ?>
 		</div>
 		<?php
 	}
@@ -190,10 +176,9 @@ class Hydra_Admin {
 	 * @return void
 	 */
 	private function render_row( array $entry, int $order ): void {
-		$protocol  = isset( $entry['protocol'] ) ? (string) $entry['protocol'] : '';
-		$has_key   = '' !== (string) ( $entry['api_key'] ?? '' );
-		$enabled   = ! empty( $entry['enabled'] );
-		$connector = '' !== (string) get_option( HYDRA_AI_CONNECTOR_KEY_OPTION, '' );
+		$protocol = isset( $entry['protocol'] ) ? (string) $entry['protocol'] : '';
+		$has_key  = '' !== (string) ( $entry['api_key'] ?? '' );
+		$enabled  = ! empty( $entry['enabled'] );
 		?>
 		<tr
 			data-id="<?php echo esc_attr( (string) $entry['id'] ); ?>"
@@ -210,18 +195,6 @@ class Hydra_Admin {
 			</td>
 			<td class="hydra-col-name">
 				<strong class="hydra-name-text"><?php echo esc_html( (string) $entry['name'] ); ?></strong>
-				<span class="hydra-endpoint"><?php echo esc_html( (string) $entry['endpoint'] ); ?></span>
-				<span class="hydra-key-badge <?php echo esc_attr( $has_key ? 'hydra-key-set' : '' ); ?>">
-					<?php
-					if ( $has_key ) {
-						esc_html_e( '已设置密钥', 'hydra-ai' );
-					} elseif ( $connector ) {
-						esc_html_e( '使用连接器密钥', 'hydra-ai' );
-					} else {
-						esc_html_e( '未设置密钥', 'hydra-ai' );
-					}
-					?>
-				</span>
 			</td>
 			<td class="hydra-col-protocol">
 				<span class="hydra-badge hydra-badge-<?php echo esc_attr( $protocol ); ?>">
@@ -312,8 +285,7 @@ class Hydra_Admin {
 
 				<p>
 					<label for="hydra-field-name"><?php esc_html_e( '名称', 'hydra-ai' ); ?> <span class="required">*</span></label>
-					<input type="text" id="hydra-field-name" name="name" class="regular-text" required maxlength="100"
-						placeholder="<?php esc_attr_e( '例如：OpenAI 官方 / 某中转站', 'hydra-ai' ); ?>" />
+					<input type="text" id="hydra-field-name" name="name" class="regular-text" required maxlength="100" />
 				</p>
 
 				<p>
@@ -328,7 +300,6 @@ class Hydra_Admin {
 				<p>
 					<label for="hydra-field-endpoint"><?php esc_html_e( '端点（基础地址）', 'hydra-ai' ); ?></label>
 					<input type="url" id="hydra-field-endpoint" name="endpoint" class="regular-text code" spellcheck="false" />
-					<span class="description hydra-endpoint-hint"></span>
 				</p>
 
 				<p>
@@ -355,28 +326,6 @@ class Hydra_Admin {
 				</div>
 			</form>
 		</dialog>
-		<?php
-	}
-
-	/**
-	 * 渲染页面底部使用说明。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	private function render_help(): void {
-		?>
-		<details class="hydra-help">
-			<summary><?php esc_html_e( '使用说明', 'hydra-ai' ); ?></summary>
-			<ul>
-				<li><?php esc_html_e( '端点为基础地址，插件会自动拼接协议路径（chat/completions、responses 或 messages）。例如填 https://api.openai.com/v1 即可。', 'hydra-ai' ); ?></li>
-				<li><?php esc_html_e( 'API Key 优先级：条目密钥 > WordPress 连接中保存的 Hydra AI 密钥 > 常量 HYDRA_AI_API_KEY。', 'hydra-ai' ); ?></li>
-				<li><?php esc_html_e( '故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。', 'hydra-ai' ); ?></li>
-				<li><?php esc_html_e( '文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。', 'hydra-ai' ); ?></li>
-				<li><?php esc_html_e( '每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。', 'hydra-ai' ); ?></li>
-			</ul>
-		</details>
 		<?php
 	}
 

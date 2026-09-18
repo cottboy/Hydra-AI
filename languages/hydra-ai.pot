@@ -11,15 +11,11 @@ msgstr ""
 "X-Generator: hydra-ai-build\n"
 "X-Domain: hydra-ai\n"
 
-#: includes/class-hydra-admin.php:335
+#: includes/class-hydra-admin.php:306
 msgid "API Key"
 msgstr ""
 
-#: includes/class-hydra-admin.php:374
-msgid "API Key 优先级：条目密钥 > WordPress 连接中保存的 Hydra AI 密钥 > 常量 HYDRA_AI_API_KEY。"
-msgstr ""
-
-#: includes/class-hydra-admin.php:324
+#: includes/class-hydra-admin.php:296
 #: includes/class-hydra-protocols.php:82
 msgid "Anthropic Messages"
 msgstr ""
@@ -28,13 +24,13 @@ msgstr ""
 msgid "Chat Completions"
 msgstr ""
 
-#: includes/class-hydra-admin.php:322
+#: includes/class-hydra-admin.php:294
 msgid "Chat Completions（OpenAI 兼容）"
 msgstr ""
 
 #: includes/class-hydra-admin.php:33
 #: includes/class-hydra-admin.php:34
-#: includes/class-hydra-admin.php:131
+#: includes/class-hydra-admin.php:118
 #: includes/class-hydra-provider.php:52
 msgid "Hydra AI"
 msgstr ""
@@ -47,7 +43,7 @@ msgstr ""
 msgid "Responses API"
 msgstr ""
 
-#: includes/class-hydra-admin.php:323
+#: includes/class-hydra-admin.php:295
 msgid "Responses API（OpenAI 官方）"
 msgstr ""
 
@@ -59,45 +55,32 @@ msgstr ""
 msgid "下载远端文件失败：HTTP %d。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:157
+#: includes/class-hydra-admin.php:144
 msgid "优先级"
 msgstr ""
 
-#: includes/class-hydra-admin.php:371
-msgid "使用说明"
-msgstr ""
-
-#: includes/class-hydra-admin.php:103
-#: includes/class-hydra-admin.php:219
-msgid "使用连接器密钥"
-msgstr ""
-
-#: includes/class-hydra-admin.php:316
-msgid "例如：OpenAI 官方 / 某中转站"
-msgstr ""
-
-#: includes/class-hydra-admin.php:158
+#: includes/class-hydra-admin.php:145
 msgid "供应商"
 msgstr ""
 
-#: includes/class-hydra-admin.php:138
+#: includes/class-hydra-admin.php:125
 msgid "供应商按列表顺序从上到下依次请求，失败时自动切换到下一个；拖动行可调整优先级。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:354
+#: includes/class-hydra-admin.php:325
 msgid "保存"
 msgstr ""
 
-#: includes/class-hydra-admin.php:98
+#: includes/class-hydra-admin.php:87
 msgid "保存失败：%s"
 msgstr ""
 
-#: includes/class-hydra-admin.php:248
+#: includes/class-hydra-admin.php:221
 msgid "删除"
 msgstr ""
 
-#: includes/class-hydra-admin.php:159
-#: includes/class-hydra-admin.php:320
+#: includes/class-hydra-admin.php:146
+#: includes/class-hydra-admin.php:292
 msgid "协议"
 msgstr ""
 
@@ -105,65 +88,48 @@ msgstr ""
 msgid "协议类型无效。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:353
+#: includes/class-hydra-admin.php:324
 msgid "取消"
 msgstr ""
 
-#: includes/class-hydra-admin.php:314
+#: includes/class-hydra-admin.php:287
 msgid "名称"
 msgstr ""
 
-#: includes/class-hydra-admin.php:236
+#: includes/class-hydra-admin.php:209
 msgid "启用供应商"
 msgstr ""
 
-#: includes/class-hydra-admin.php:348
+#: includes/class-hydra-admin.php:319
 msgid "启用该供应商"
 msgstr ""
 
-#: includes/class-hydra-protocols.php:141
-msgid "填写基础地址，最终请求 {端点}/chat/completions"
-msgstr ""
-
-#: includes/class-hydra-protocols.php:145
-msgid "填写基础地址，最终请求 {端点}/messages"
-msgstr ""
-
-#: includes/class-hydra-protocols.php:143
-msgid "填写基础地址，最终请求 {端点}/responses"
-msgstr ""
-
-#: includes/class-hydra-admin.php:102
-#: includes/class-hydra-admin.php:217
+#: includes/class-hydra-admin.php:91
 msgid "已设置密钥"
 msgstr ""
 
-#: includes/class-hydra-admin.php:143
+#: includes/class-hydra-admin.php:130
 msgid "当前 WordPress 未加载 AI 客户端（需要 WordPress 7.0+ 且未禁用 AI 功能），供应商注册与故障转移能力不可用。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:209
+#: includes/class-hydra-admin.php:194
 msgid "拖动调整优先级"
 msgstr ""
 
-#: includes/class-hydra-admin.php:99
+#: includes/class-hydra-admin.php:88
 msgid "排序保存失败，请刷新页面重试。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:517
+#: includes/class-hydra-admin.php:466
 msgid "排序数据与条目数量不一致。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:528
+#: includes/class-hydra-admin.php:477
 msgid "排序数据包含未知条目。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:162
+#: includes/class-hydra-admin.php:149
 msgid "操作"
-msgstr ""
-
-#: includes/class-hydra-admin.php:375
-msgid "故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。"
 msgstr ""
 
 #: includes/class-hydra-files.php:90
@@ -172,7 +138,7 @@ msgstr ""
 
 #: includes/class-hydra-protocol-anthropic.php:265
 #: includes/class-hydra-protocol-anthropic.php:273
-#: includes/class-hydra-protocol-anthropic.php:308
+#: includes/class-hydra-protocol-anthropic.php:313
 #: includes/class-hydra-protocol-chat.php:273
 #: includes/class-hydra-protocol-chat.php:280
 #: includes/class-hydra-protocol-responses.php:236
@@ -180,99 +146,82 @@ msgstr ""
 msgid "文件消息部件缺少文件数据。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:376
-msgid "文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。"
-msgstr ""
-
-#: includes/class-hydra-admin.php:450
+#: includes/class-hydra-admin.php:399
 msgid "最多支持 %d 个供应商条目。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:286
+#: includes/class-hydra-admin.php:259
 msgid "最近一次故障转移（全部失败）："
 msgstr ""
 
-#: includes/class-hydra-admin.php:285
+#: includes/class-hydra-admin.php:258
 msgid "最近一次故障转移（已成功）："
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:402
+#: includes/class-hydra-protocol-anthropic.php:404
 #: includes/class-hydra-protocol-chat.php:374
 #: includes/class-hydra-protocol-responses.php:336
 msgid "服务端返回了未知错误。"
-msgstr ""
-
-#: includes/class-hydra-admin.php:104
-#: includes/class-hydra-admin.php:221
-msgid "未设置密钥"
 msgstr ""
 
 #: includes/class-hydra-text-model.php:126
 msgid "未配置 API Key（条目与连接器中均未提供）。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:393
+#: includes/class-hydra-admin.php:342
 msgid "权限不足。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:434
-#: includes/class-hydra-admin.php:493
-#: includes/class-hydra-admin.php:553
+#: includes/class-hydra-admin.php:383
+#: includes/class-hydra-admin.php:442
+#: includes/class-hydra-admin.php:502
 msgid "条目不存在或已被删除。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:160
-#: includes/class-hydra-admin.php:341
+#: includes/class-hydra-admin.php:147
+#: includes/class-hydra-admin.php:312
 msgid "模型"
 msgstr ""
 
-#: includes/class-hydra-admin.php:377
-msgid "每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。"
-msgstr ""
-
-#: includes/class-hydra-admin.php:242
+#: includes/class-hydra-admin.php:215
 msgid "测试"
 msgstr ""
 
-#: includes/class-hydra-admin.php:106
+#: includes/class-hydra-admin.php:93
 msgid "测试中…"
 msgstr ""
 
-#: includes/class-hydra-admin.php:107
-#: includes/class-hydra-admin.php:133
-#: includes/class-hydra-admin.php:311
+#: includes/class-hydra-admin.php:94
+#: includes/class-hydra-admin.php:120
+#: includes/class-hydra-admin.php:284
 msgid "添加供应商"
 msgstr ""
 
-#: includes/class-hydra-admin.php:161
+#: includes/class-hydra-admin.php:148
 msgid "状态"
 msgstr ""
 
-#: includes/class-hydra-admin.php:337
+#: includes/class-hydra-admin.php:308
 msgid "留空则使用 WordPress 连接中保存的 Hydra AI 密钥；编辑时留空表示保持不变。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:97
+#: includes/class-hydra-admin.php:86
 msgid "确定要删除供应商“%s”吗？删除后不可恢复。"
-msgstr ""
-
-#: includes/class-hydra-admin.php:373
-msgid "端点为基础地址，插件会自动拼接协议路径（chat/completions、responses 或 messages）。例如填 https://api.openai.com/v1 即可。"
 msgstr ""
 
 #: includes/class-hydra-text-model.php:133
 msgid "端点地址无效。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:329
+#: includes/class-hydra-admin.php:301
 msgid "端点（基础地址）"
 msgstr ""
 
-#: includes/class-hydra-admin.php:245
+#: includes/class-hydra-admin.php:218
 msgid "编辑"
 msgstr ""
 
-#: includes/class-hydra-admin.php:108
+#: includes/class-hydra-admin.php:95
 msgid "编辑供应商"
 msgstr ""
 
@@ -284,7 +233,7 @@ msgstr ""
 msgid "设置"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:341
+#: includes/class-hydra-protocol-anthropic.php:343
 #: includes/class-hydra-protocol-chat.php:318
 #: includes/class-hydra-protocol-responses.php:284
 msgid "该协议不支持此输入文件类型：%s"
@@ -294,7 +243,7 @@ msgstr ""
 msgid "该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:325
+#: includes/class-hydra-protocol-anthropic.php:327
 msgid "该协议的文档输入仅支持 PDF 或纯文本。"
 msgstr ""
 
@@ -315,11 +264,11 @@ msgstr ""
 msgid "请填写模型名称。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:105
+#: includes/class-hydra-admin.php:92
 msgid "请求失败，请检查网络后重试。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:173
+#: includes/class-hydra-admin.php:160
 msgid "还没有供应商。点击右上角“添加供应商”，配置你的第一个 AI 端点。"
 msgstr ""
 
@@ -327,7 +276,7 @@ msgstr ""
 msgid "远端文件内容为空。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:101
+#: includes/class-hydra-admin.php:90
 msgid "连接失败：%s"
 msgstr ""
 
@@ -335,6 +284,6 @@ msgstr ""
 msgid "连接成功。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:100
+#: includes/class-hydra-admin.php:89
 msgid "连接成功：%s"
 msgstr ""
