@@ -1,0 +1,9 @@
+# 系统与编辑器杂项文件
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+
+# Python 运行缓存
+__pycache__/
