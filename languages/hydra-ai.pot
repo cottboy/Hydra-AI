@@ -51,6 +51,14 @@ msgstr ""
 msgid "Responses API（OpenAI 官方）"
 msgstr ""
 
+#: includes/class-hydra-files.php:129
+msgid "下载远端文件失败：%s"
+msgstr ""
+
+#: includes/class-hydra-files.php:140
+msgid "下载远端文件失败：HTTP %d。"
+msgstr ""
+
 #: includes/class-hydra-admin.php:157
 msgid "优先级"
 msgstr ""
@@ -142,11 +150,11 @@ msgstr ""
 msgid "排序保存失败，请刷新页面重试。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:516
+#: includes/class-hydra-admin.php:517
 msgid "排序数据与条目数量不一致。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:527
+#: includes/class-hydra-admin.php:528
 msgid "排序数据包含未知条目。"
 msgstr ""
 
@@ -158,7 +166,25 @@ msgstr ""
 msgid "故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:449
+#: includes/class-hydra-files.php:90
+msgid "文件 URL 无效。"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:265
+#: includes/class-hydra-protocol-anthropic.php:273
+#: includes/class-hydra-protocol-anthropic.php:308
+#: includes/class-hydra-protocol-chat.php:273
+#: includes/class-hydra-protocol-chat.php:280
+#: includes/class-hydra-protocol-responses.php:236
+#: includes/class-hydra-protocol-responses.php:243
+msgid "文件消息部件缺少文件数据。"
+msgstr ""
+
+#: includes/class-hydra-admin.php:376
+msgid "文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。"
+msgstr ""
+
+#: includes/class-hydra-admin.php:450
 msgid "最多支持 %d 个供应商条目。"
 msgstr ""
 
@@ -170,9 +196,9 @@ msgstr ""
 msgid "最近一次故障转移（已成功）："
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:336
-#: includes/class-hydra-protocol-chat.php:334
-#: includes/class-hydra-protocol-responses.php:316
+#: includes/class-hydra-protocol-anthropic.php:402
+#: includes/class-hydra-protocol-chat.php:374
+#: includes/class-hydra-protocol-responses.php:336
 msgid "服务端返回了未知错误。"
 msgstr ""
 
@@ -185,13 +211,13 @@ msgstr ""
 msgid "未配置 API Key（条目与连接器中均未提供）。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:392
+#: includes/class-hydra-admin.php:393
 msgid "权限不足。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:433
-#: includes/class-hydra-admin.php:492
-#: includes/class-hydra-admin.php:552
+#: includes/class-hydra-admin.php:434
+#: includes/class-hydra-admin.php:493
+#: includes/class-hydra-admin.php:553
 msgid "条目不存在或已被删除。"
 msgstr ""
 
@@ -200,7 +226,7 @@ msgstr ""
 msgid "模型"
 msgstr ""
 
-#: includes/class-hydra-admin.php:376
+#: includes/class-hydra-admin.php:377
 msgid "每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。"
 msgstr ""
 
@@ -258,6 +284,29 @@ msgstr ""
 msgid "设置"
 msgstr ""
 
+#: includes/class-hydra-protocol-anthropic.php:341
+#: includes/class-hydra-protocol-chat.php:318
+#: includes/class-hydra-protocol-responses.php:284
+msgid "该协议不支持此输入文件类型：%s"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:288
+msgid "该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:325
+msgid "该协议的文档输入仅支持 PDF 或纯文本。"
+msgstr ""
+
+#: includes/class-hydra-protocol-chat.php:303
+#: includes/class-hydra-protocol-responses.php:264
+msgid "该协议的文档输入仅支持 PDF。"
+msgstr ""
+
+#: includes/class-hydra-files.php:175
+msgid "该协议的音频输入仅支持 WAV 或 MP3 格式。"
+msgstr ""
+
 #: includes/class-hydra-settings.php:120
 msgid "请填写供应商名称。"
 msgstr ""
@@ -272,6 +321,10 @@ msgstr ""
 
 #: includes/class-hydra-admin.php:173
 msgid "还没有供应商。点击右上角“添加供应商”，配置你的第一个 AI 端点。"
+msgstr ""
+
+#: includes/class-hydra-files.php:148
+msgid "远端文件内容为空。"
 msgstr ""
 
 #: includes/class-hydra-admin.php:101

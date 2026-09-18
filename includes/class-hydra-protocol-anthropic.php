@@ -8,6 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
+use WordPress\AiClient\Common\Exception\RuntimeException;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -206,40 +207,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		}
 
 		if ( $type->isFile() ) {
-			$file = $part->getFile();
-			if ( ! $file ) {
-				return null;
-			}
-
-			// 远程文件仅支持文档类型。
-			if ( $file->isRemote() ) {
-				$url = $file->getUrl();
-				if ( $url && $file->isDocument() ) {
-					return array(
-						'type'   => 'document',
-						'source' => array(
-							'type' => 'url',
-							'url'  => $url,
-						),
-					);
-				}
-				return null;
-			}
-
-			// 内联文件：图片与文档以 base64 提供。
-			$data = $file->getBase64Data();
-			if ( ! $data || ( ! $file->isImage() && ! $file->isDocument() ) ) {
-				return null;
-			}
-
-			return array(
-				'type'   => $file->isImage() ? 'image' : 'document',
-				'source' => array(
-					'type'       => 'base64',
-					'media_type' => $file->getMimeType(),
-					'data'       => $data,
-				),
-			);
+			return $this->convert_file_part( $part );
 		}
 
 		if ( $type->isFunctionCall() ) {
@@ -276,6 +244,106 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		}
 
 		return null;
+	}
+
+	/**
+	 * 把文件部件转换为 Anthropic 内容块。
+	 *
+	 * 支持图片（内联 base64 或远程 URL，格式限 JPEG/PNG/GIF/WebP）与
+	 * 文档（PDF 远程 URL 或 base64，纯文本 base64）；音频、视频等其余
+	 * 类型不受 Anthropic 协议支持，抛出异常后由故障转移切换条目。
+	 *
+	 * @since 1.0.1
+	 *
+	 * @param MessagePart $part 消息部件。
+	 * @return array<string,mixed>
+	 * @throws RuntimeException 文件类型不受该协议支持时抛出。
+	 */
+	private function convert_file_part( MessagePart $part ): array {
+		$file = $part->getFile();
+		if ( ! $file ) {
+			throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
+		}
+
+		if ( $file->isImage() ) {
+			// 远程图片：直接传 URL，由 Anthropic 服务端抓取。
+			if ( $file->isRemote() ) {
+				$url = $file->getUrl();
+				if ( ! $url ) {
+					throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
+				}
+
+				return array(
+					'type'   => 'image',
+					'source' => array(
+						'type' => 'url',
+						'url'  => $url,
+					),
+				);
+			}
+
+			// 内联图片：base64 源，格式必须在官方支持列表内。
+			$mime = strtolower( $file->getMimeType() );
+			if ( ! in_array( $mime, array( 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ), true ) ) {
+				throw new RuntimeException( __( '该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。', 'hydra-ai' ) );
+			}
+
+			return array(
+				'type'   => 'image',
+				'source' => array(
+					'type'       => 'base64',
+					'media_type' => $mime,
+					'data'       => Hydra_Files::to_base64( $file ),
+				),
+			);
+		}
+
+		/*
+		 * 文档输入：SDK 将 PDF 等归类为 isDocument()，纯文本文件归类为
+		 * isText()，两者 Anthropic 均支持。远程 PDF 直接传 URL；
+		 * 其余以内联 base64 提供，远程纯文本先下载内联。
+		 */
+		if ( $file->isDocument() || $file->isText() ) {
+			$mime = strtolower( $file->getMimeType() );
+
+			if ( 'application/pdf' === $mime && $file->isRemote() ) {
+				// 远程 PDF：直接传 URL。
+				$url = $file->getUrl();
+				if ( ! $url ) {
+					throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
+				}
+
+				return array(
+					'type'   => 'document',
+					'source' => array(
+						'type' => 'url',
+						'url'  => $url,
+					),
+				);
+			}
+
+			$inline_ok = in_array( $mime, array( 'application/pdf', 'text/plain' ), true );
+			if ( ! $inline_ok && ! in_array( $mime, array( 'text/markdown', 'text/html' ), true ) ) {
+				throw new RuntimeException( __( '该协议的文档输入仅支持 PDF 或纯文本。', 'hydra-ai' ) );
+			}
+
+			return array(
+				'type'   => 'document',
+				'source' => array(
+					'type'       => 'base64',
+					'media_type' => in_array( $mime, array( 'application/pdf' ), true ) ? 'application/pdf' : 'text/plain',
+					'data'       => Hydra_Files::to_base64( $file ),
+				),
+			);
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				/* translators: %s: MIME 类型。 */
+				__( '该协议不支持此输入文件类型：%s', 'hydra-ai' ),
+				$file->getMimeType()
+			)
+		);
 	}
 
 	/**

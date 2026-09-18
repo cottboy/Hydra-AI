@@ -8,6 +8,7 @@
 defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
+use WordPress\AiClient\Common\Exception\RuntimeException;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -190,10 +191,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 			}
 
 			if ( $type->isFile() ) {
-				$image = $this->convert_image_part( $part );
-				if ( $image ) {
-					$content[] = $image;
-				}
+				$content[] = $this->convert_file_part( $part );
 				continue;
 			}
 
@@ -257,27 +255,69 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 	}
 
 	/**
-	 * 把文件部件转换为图片输入，仅支持图片类型。
+	 * 把文件部件转换为 Chat 协议的内容项。
 	 *
-	 * @since 1.0.0
+	 * 支持图片（远程 URL 或 data URI）、音频（WAV/MP3，远端自动下载内联）
+	 * 与 PDF 文档（远端自动下载内联）；其余类型抛出异常，由故障转移
+	 * 切换到支持的供应商条目。
+	 *
+	 * @since 1.0.1
 	 *
 	 * @param MessagePart $part 消息部件。
-	 * @return array<string,mixed>|null 非图片返回 null。
+	 * @return array<string,mixed>
+	 * @throws RuntimeException 文件类型不受该协议支持时抛出。
 	 */
-	private function convert_image_part( MessagePart $part ): ?array {
+	private function convert_file_part( MessagePart $part ): array {
 		$file = $part->getFile();
-		if ( ! $file || ! $file->isImage() ) {
-			return null;
+		if ( ! $file ) {
+			throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
 		}
 
-		$url = $file->isRemote() ? $file->getUrl() : $file->getDataUri();
-		if ( ! $url ) {
-			return null;
+		if ( $file->isImage() ) {
+			// 图片：远端直接传 URL，内联传 data URI。
+			$url = $file->isRemote() ? $file->getUrl() : $file->getDataUri();
+			if ( ! $url ) {
+				throw new RuntimeException( __( '文件消息部件缺少文件数据。', 'hydra-ai' ) );
+			}
+
+			return array(
+				'type'      => 'image_url',
+				'image_url' => array( 'url' => $url ),
+			);
 		}
 
-		return array(
-			'type'      => 'image_url',
-			'image_url' => array( 'url' => $url ),
+		if ( $file->isAudio() ) {
+			// 音频：Chat 协议仅接受内联 base64，远端文件自动下载。
+			return array(
+				'type'        => 'input_audio',
+				'input_audio' => array(
+					'data'   => Hydra_Files::to_base64( $file ),
+					'format' => Hydra_Files::openai_audio_format( $file ),
+				),
+			);
+		}
+
+		if ( $file->isDocument() ) {
+			// 文档：Chat 协议仅支持 PDF，以 data URI 内联。
+			if ( 'application/pdf' !== strtolower( $file->getMimeType() ) ) {
+				throw new RuntimeException( __( '该协议的文档输入仅支持 PDF。', 'hydra-ai' ) );
+			}
+
+			return array(
+				'type' => 'file',
+				'file' => array(
+					'filename'  => Hydra_Files::file_name( $file ),
+					'file_data' => Hydra_Files::to_data_uri( $file ),
+				),
+			);
+		}
+
+		throw new RuntimeException(
+			sprintf(
+				/* translators: %s: MIME 类型。 */
+				__( '该协议不支持此输入文件类型：%s', 'hydra-ai' ),
+				$file->getMimeType()
+			)
 		);
 	}
 

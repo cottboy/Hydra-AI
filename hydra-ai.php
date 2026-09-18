@@ -2,7 +2,7 @@
 /**
  * Plugin Name:  Hydra AI
  * Description:  在 WordPress 连接中注册一个自定义 AI 供应商，支持 OpenAI Chat、OpenAI Responses 与 Anthropic 三种协议，可自由配置端点，并按优先级从上到下自动故障转移。
- * Version:      1.0.0
+ * Version:      1.0.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author:       Hydra AI
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HYDRA_AI_VERSION', '1.0.0' );
+define( 'HYDRA_AI_VERSION', '1.0.1' );
 define( 'HYDRA_AI_FILE', __FILE__ );
 define( 'HYDRA_AI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYDRA_AI_URL', plugin_dir_url( __FILE__ ) );
@@ -31,6 +31,7 @@ define( 'HYDRA_AI_CONNECTOR_KEY_OPTION', 'connectors_ai_hydra_ai_api_key' );
 define( 'HYDRA_AI_MAX_ENTRIES', 50 );
 
 require_once HYDRA_AI_DIR . 'includes/class-hydra-ai.php';
+require_once HYDRA_AI_DIR . 'includes/class-hydra-files.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-settings.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-interface.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-chat.php';

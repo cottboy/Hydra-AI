@@ -373,6 +373,7 @@ class Hydra_Admin {
 				<li><?php esc_html_e( '端点为基础地址，插件会自动拼接协议路径（chat/completions、responses 或 messages）。例如填 https://api.openai.com/v1 即可。', 'hydra-ai' ); ?></li>
 				<li><?php esc_html_e( 'API Key 优先级：条目密钥 > WordPress 连接中保存的 Hydra AI 密钥 > 常量 HYDRA_AI_API_KEY。', 'hydra-ai' ); ?></li>
 				<li><?php esc_html_e( '故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。', 'hydra-ai' ); ?></li>
+				<li><?php esc_html_e( '文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。', 'hydra-ai' ); ?></li>
 				<li><?php esc_html_e( '每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。', 'hydra-ai' ); ?></li>
 			</ul>
 		</details>
