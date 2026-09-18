@@ -15,19 +15,26 @@ require_once 'C:/EServer-data/www/ceshi.ceshi/wp-content/plugins/hydra-ai/hydra-
 wp_set_current_user( 1 );
 hydra_ai_register_provider();
 
-// 预置两条演示条目（覆盖三种协议徽章与密钥状态）。
+// 捕获现场并注册关闭时恢复：即使中途崩溃也不会丢失站点已有配置。
+$original = get_option( HYDRA_AI_OPTION, null );
+register_shutdown_function( static function () use ( $original ): void {
+	if ( null === $original ) {
+		delete_option( HYDRA_AI_OPTION );
+	} else {
+		update_option( HYDRA_AI_OPTION, $original, false );
+	}
+} );
+
+// 预置两条演示条目（覆盖三种协议徽章与密钥状态），仅用于本次渲染，结束时恢复原配置。
 $entries = array(
 	array( 'id' => 'demo1', 'name' => 'OpenAI 官方', 'protocol' => 'chat', 'endpoint' => 'https://api.openai.com/v1', 'api_key' => 'sk-demo', 'model' => 'gpt-4o-mini', 'enabled' => true ),
 	array( 'id' => 'demo2', 'name' => '本地 Ollama', 'protocol' => 'anthropic', 'endpoint' => 'http://127.0.0.1:11434/v1', 'api_key' => '', 'model' => 'qwen3', 'enabled' => false ),
 );
-update_option( 'hydra_ai_providers', $entries, false );
+update_option( HYDRA_AI_OPTION, $entries, false );
 
 ob_start();
 ( new Hydra_Admin() )->render_page();
 $html = ob_get_clean();
-
-// 恢复空配置，避免污染站点。
-delete_option( 'hydra_ai_providers' );
 
 echo '页面长度: ' . strlen( $html ) . " 字节\n";
 foreach ( array( '添加供应商', 'hydra-entry-dialog', 'OpenAI 官方', '本地 Ollama', '端点（基础地址）', 'API Key' ) as $needle ) {
