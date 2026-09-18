@@ -1,0 +1,255 @@
+/* Hydra AI 设置页样式 */
+
+.hydra-ai-wrap .hydra-entries-table {
+	margin-top: 1em;
+}
+
+/* 优先级列与拖拽手柄 */
+.hydra-ai-wrap .hydra-col-order {
+	width: 90px;
+	white-space: nowrap;
+}
+
+.hydra-ai-wrap .hydra-order-num {
+	display: inline-block;
+	min-width: 1.5em;
+	color: #646970;
+	font-variant-numeric: tabular-nums;
+}
+
+.hydra-ai-wrap .hydra-drag-handle {
+	cursor: grab;
+	color: #787c82;
+	vertical-align: middle;
+}
+
+.hydra-ai-wrap .hydra-drag-handle:active {
+	cursor: grabbing;
+}
+
+.hydra-ai-wrap .ui-sortable-helper {
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+	background: #fff;
+}
+
+.hydra-ai-wrap .hydra-entries-table tbody tr.hydra-row-disabled .hydra-name-text,
+.hydra-ai-wrap .hydra-entries-table tbody tr.hydra-row-disabled .hydra-endpoint {
+	opacity: 0.45;
+}
+
+/* 供应商列 */
+.hydra-ai-wrap .hydra-col-name .hydra-endpoint {
+	display: block;
+	color: #646970;
+	font-size: 12px;
+	margin-top: 2px;
+	word-break: break-all;
+}
+
+.hydra-ai-wrap .hydra-key-badge {
+	display: inline-block;
+	margin-left: 8px;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 11px;
+	background: #f0f0f1;
+	color: #787c82;
+}
+
+.hydra-ai-wrap .hydra-key-badge.hydra-key-set {
+	background: #edfaef;
+	color: #1c7c3c;
+}
+
+/* 协议徽章 */
+.hydra-ai-wrap .hydra-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	border-radius: 3px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #fff;
+}
+
+.hydra-ai-wrap .hydra-badge-chat {
+	background: #10a37f;
+}
+
+.hydra-ai-wrap .hydra-badge-responses {
+	background: #4f46e5;
+}
+
+.hydra-ai-wrap .hydra-badge-anthropic {
+	background: #d97757;
+}
+
+/* 列宽 */
+.hydra-ai-wrap .hydra-col-protocol {
+	width: 170px;
+}
+
+.hydra-ai-wrap .hydra-col-model {
+	width: 180px;
+}
+
+.hydra-ai-wrap .hydra-col-status {
+	width: 80px;
+}
+
+.hydra-ai-wrap .hydra-col-actions {
+	width: 260px;
+	white-space: nowrap;
+}
+
+/* 启用开关 */
+.hydra-switch {
+	position: relative;
+	display: inline-block;
+	width: 40px;
+	height: 22px;
+}
+
+.hydra-switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.hydra-switch .hydra-slider {
+	position: absolute;
+	inset: 0;
+	background: #c3c4c7;
+	border-radius: 11px;
+	transition: background 0.15s ease-in-out;
+}
+
+.hydra-switch .hydra-slider::before {
+	content: "";
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	left: 3px;
+	top: 3px;
+	background: #fff;
+	border-radius: 50%;
+	transition: transform 0.15s ease-in-out;
+}
+
+.hydra-switch input:checked + .hydra-slider {
+	background: #2271b1;
+}
+
+.hydra-switch input:checked + .hydra-slider::before {
+	transform: translateX(18px);
+}
+
+.hydra-switch input:focus-visible + .hydra-slider {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2271b1;
+}
+
+/* 测试结果 */
+.hydra-ai-wrap .hydra-test-result {
+	display: inline-block;
+	margin-left: 8px;
+	font-size: 12px;
+	max-width: 220px;
+	white-space: normal;
+	vertical-align: middle;
+}
+
+.hydra-ai-wrap .hydra-test-result.hydra-ok {
+	color: #1c7c3c;
+}
+
+.hydra-ai-wrap .hydra-test-result.hydra-error {
+	color: #b32d2e;
+}
+
+.hydra-ai-wrap .hydra-testing {
+	opacity: 0.6;
+}
+
+/* 提示条 */
+.hydra-ai-wrap .hydra-notice {
+	margin: 12px 0;
+}
+
+.hydra-report ul {
+	list-style: disc;
+	margin-left: 20px;
+}
+
+/* 空状态 */
+.hydra-empty-state {
+	margin-top: 1em;
+	padding: 40px 20px;
+	text-align: center;
+	background: #fff;
+	border: 1px dashed #c3c4c7;
+	border-radius: 4px;
+	color: #646970;
+}
+
+/* 弹窗 */
+.hydra-dialog {
+	border: none;
+	border-radius: 8px;
+	padding: 24px;
+	width: 560px;
+	max-width: calc(100vw - 40px);
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.hydra-dialog::backdrop {
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.hydra-dialog h2 {
+	margin: 0 0 16px;
+	font-size: 18px;
+}
+
+.hydra-dialog p {
+	margin: 0 0 14px;
+}
+
+.hydra-dialog label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 600;
+}
+
+.hydra-dialog .required {
+	color: #b32d2e;
+}
+
+.hydra-dialog .description {
+	display: block;
+	margin-top: 4px;
+}
+
+.hydra-dialog .hydra-dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+/* 帮助说明 */
+.hydra-help {
+	margin: 20px 0;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.hydra-help summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.hydra-help ul {
+	list-style: disc;
+	margin: 10px 0 4px 20px;
+}
