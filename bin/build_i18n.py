@@ -45,8 +45,6 @@ msgstr ""
 """,
         {
             'API Key': 'API Key',
-            'API Key 优先级：条目密钥 > WordPress 连接中保存的 Hydra AI 密钥 > 常量 HYDRA_AI_API_KEY。':
-                'API key precedence: the entry key > the Hydra AI key saved in WordPress Connections > the HYDRA_AI_API_KEY constant.',
             'Anthropic Messages': 'Anthropic Messages',
             'Chat Completions': 'Chat Completions',
             'Chat Completions（OpenAI 兼容）': 'Chat Completions (OpenAI-compatible)',
@@ -56,9 +54,6 @@ msgstr ""
             'Responses API': 'Responses API',
             'Responses API（OpenAI 官方）': 'Responses API (official OpenAI)',
             '优先级': 'Priority',
-            '使用说明': 'Usage notes',
-            '使用连接器密钥': 'Using connector key',
-            '例如：OpenAI 官方 / 某中转站': 'e.g. OpenAI official / a relay service',
             '供应商': 'Provider',
             '供应商按列表顺序从上到下依次请求，失败时自动切换到下一个；拖动行可调整优先级。':
                 'Providers are requested in list order from top to bottom, falling back to the next one on failure. Drag rows to change priority.',
@@ -71,12 +66,6 @@ msgstr ""
             '名称': 'Name',
             '启用供应商': 'Enable provider',
             '启用该供应商': 'Enable this provider',
-            '填写基础地址，最终请求 {端点}/chat/completions':
-                'Enter the base URL. The final request goes to {endpoint}/chat/completions.',
-            '填写基础地址，最终请求 {端点}/messages':
-                'Enter the base URL. The final request goes to {endpoint}/messages.',
-            '填写基础地址，最终请求 {端点}/responses':
-                'Enter the base URL. The final request goes to {endpoint}/responses.',
             '已设置密钥': 'Key set',
             '当前 WordPress 未加载 AI 客户端（需要 WordPress 7.0+ 且未禁用 AI 功能），供应商注册与故障转移能力不可用。':
                 'The WordPress AI client is not loaded (requires WordPress 7.0+ with AI features enabled). Provider registration and failover are unavailable.',
@@ -85,20 +74,15 @@ msgstr ""
             '排序数据与条目数量不一致。': 'The order data does not match the number of entries.',
             '排序数据包含未知条目。': 'The order data contains unknown entries.',
             '操作': 'Actions',
-            '故障转移：请求按列表顺序从上到下尝试，任一环节失败（网络错误、鉴权失败、响应无效等）即切换到下一个供应商。':
-                'Failover: requests are attempted in list order from top to bottom. Any failure (network error, authentication failure, invalid response, etc.) switches to the next provider.',
             '最多支持 %d 个供应商条目。': 'Up to %d provider entries are supported.',
             '最近一次故障转移（全部失败）：': 'Most recent failover (all attempts failed):',
             '最近一次故障转移（已成功）：': 'Most recent failover (succeeded):',
             '服务端返回了未知错误。': 'The server returned an unknown error.',
-            '未设置密钥': 'No key set',
             '未配置 API Key（条目与连接器中均未提供）。':
                 'No API key configured (provided by neither the entry nor the connector).',
             '权限不足。': 'Insufficient permissions.',
             '条目不存在或已被删除。': 'The entry does not exist or has been deleted.',
             '模型': 'Model',
-            '每个条目的模型会以 Hydra AI 供应商的名义暴露给 WordPress AI 客户端，其他插件可直接使用。':
-                "Each entry's model is exposed to the WordPress AI client under the Hydra AI provider and can be used directly by other plugins.",
             '测试': 'Test',
             '测试中…': 'Testing…',
             '添加供应商': 'Add provider',
@@ -107,8 +91,6 @@ msgstr ""
                 'Leave empty to use the Hydra AI key saved in WordPress Connections. When editing, empty means keep unchanged.',
             '确定要删除供应商“%s”吗？删除后不可恢复。':
                 'Delete the provider "%s"? This cannot be undone.',
-            '端点为基础地址，插件会自动拼接协议路径（chat/completions、responses 或 messages）。例如填 https://api.openai.com/v1 即可。':
-                'The endpoint is a base URL; the plugin appends the protocol path (chat/completions, responses, or messages) automatically. For example, enter https://api.openai.com/v1.',
             '端点地址无效。': 'Invalid endpoint URL.',
             '端点（基础地址）': 'Endpoint (base URL)',
             '编辑': 'Edit',
@@ -134,8 +116,6 @@ msgstr ""
             '该协议的文档输入仅支持 PDF 或纯文本。': 'Document input for this protocol only supports PDF or plain text.',
             '该协议不支持此输入文件类型：%s': 'This protocol does not support this input file type: %s',
             '该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。': 'Inline images for this protocol support JPEG, PNG, GIF, or WebP only.',
-            '文件输入：三种协议支持各自原生的图片、PDF 与音频格式；远端文件在不支持 URL 的协议下会自动下载后内联（上限 25MB），不支持的类型自动切换下一个供应商。':
-                'File input: the three protocols accept their native image, PDF, and audio formats. Remote files are downloaded and inlined automatically for protocols without URL support (25MB limit); unsupported types automatically fall back to the next provider.',
         },
     ),
 }

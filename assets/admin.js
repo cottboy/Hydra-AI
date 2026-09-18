@@ -8,7 +8,6 @@
 
 	var config = window.HydraAdmin || {};
 	var i18n = config.i18n || {};
-	var defaults = config.defaults || {};
 
 	/**
 	 * 把字符串中的第一个 %s 替换为参数。
@@ -49,26 +48,13 @@
 	}
 
 	/**
-	 * 更新端点提示与占位符。
-	 */
-	function updateProtocolHints() {
-		var protocol = $( '#hydra-field-protocol' ).val();
-		var preset = defaults[ protocol ] || {};
-
-		$( '.hydra-endpoint-hint' ).text( preset.hint || '' );
-		$( '#hydra-field-endpoint' ).attr( 'placeholder', preset.endpoint || '' );
-		$( '#hydra-field-model' ).attr( 'placeholder', preset.model || '' );
-	}
-
-	/**
 	 * 以新增模式打开弹窗。
 	 */
 	function openAddDialog() {
 		$( '#hydra-dialog-title' ).text( i18n.dialogAdd || '添加供应商' );
 		$( '#hydra-entry-form' )[ 0 ].reset();
 		$( '#hydra-field-id' ).val( '' );
-		$( '#hydra-field-api-key' ).val( '' );
-		updateProtocolHints();
+		$( '#hydra-field-api-key' ).val( '' ).removeAttr( 'placeholder' );
 		$( '#hydra-entry-dialog' )[ 0 ].showModal();
 	}
 
@@ -86,7 +72,6 @@
 		$( '#hydra-field-api-key' ).val( '' ).attr( 'placeholder', $row.data( 'hasKey' ) ? ( i18n.keyExists || '' ) : '' );
 		$( '#hydra-field-model' ).val( $row.data( 'model' ) );
 		$( '#hydra-field-enabled' ).prop( 'checked', !! $row.data( 'enabled' ) );
-		updateProtocolHints();
 		$( '#hydra-entry-dialog' )[ 0 ].showModal();
 	}
 
@@ -181,9 +166,6 @@
 		$( '#hydra-dialog-cancel' ).on( 'click', function () {
 			$( '#hydra-entry-dialog' )[ 0 ].close();
 		} );
-
-		// 协议切换时更新提示。
-		$( '#hydra-field-protocol' ).on( 'change', updateProtocolHints );
 
 		// 保存表单。
 		$( '#hydra-entry-form' ).on( 'submit', function ( event ) {

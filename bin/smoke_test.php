@@ -104,6 +104,10 @@ register_shutdown_function( static function () use ( $had_entries, $had_connecto
 } );
 
 $availability = new Hydra_Availability();
+
+// 测试不假设现场干净：先清空条目与连接器密钥（原值已捕获，结束时恢复）再断言。
+delete_option( HYDRA_AI_OPTION );
+delete_option( HYDRA_AI_CONNECTOR_KEY_OPTION );
 assert_check( '无条目无密钥时未配置', ! $availability->isConfigured() );
 
 update_option( HYDRA_AI_CONNECTOR_KEY_OPTION, 'sk-connector', false );

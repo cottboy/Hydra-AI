@@ -20,7 +20,7 @@ $cases_en = array(
 	array( '添加供应商', 'Add provider' ),
 	array( '保存失败：%s', 'Save failed: %s' ),
 	array( '测试中…', 'Testing…' ),
-	array( '未设置密钥', 'No key set' ),
+	array( '已设置密钥', 'Key set' ),
 	array( '确定要删除供应商“%s”吗？删除后不可恢复。', 'Delete the provider "%s"? This cannot be undone.' ),
 	array( '优先级', 'Priority' ),
 	array( '模型', 'Model' ),
@@ -39,7 +39,7 @@ restore_current_locale();
 /* 默认（zh_CN 站点）：应显示代码中的中文源文本 */
 hydra_ai_load_textdomain();
 echo "== zh_CN（源语言） ==\n";
-foreach ( array( '保存', '添加供应商', '未设置密钥' ) as $src ) {
+foreach ( array( '保存', '添加供应商', '已设置密钥' ) as $src ) {
 	$got = __( $src, 'hydra-ai' );
 	$ok  = $got === $src;
 	if ( ! $ok ) { $failures++; }
