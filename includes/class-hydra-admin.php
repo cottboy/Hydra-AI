@@ -291,8 +291,8 @@ class Hydra_Admin {
 				<p>
 					<label for="hydra-field-protocol"><?php esc_html_e( '协议', 'hydra-ai' ); ?> <span class="required">*</span></label>
 					<select id="hydra-field-protocol" name="protocol">
-						<option value="chat"><?php esc_html_e( 'Chat Completions（OpenAI 兼容）', 'hydra-ai' ); ?></option>
-						<option value="responses"><?php esc_html_e( 'Responses API（OpenAI 官方）', 'hydra-ai' ); ?></option>
+						<option value="chat"><?php esc_html_e( 'Chat Completions', 'hydra-ai' ); ?></option>
+						<option value="responses"><?php esc_html_e( 'Responses', 'hydra-ai' ); ?></option>
 						<option value="anthropic"><?php esc_html_e( 'Anthropic Messages', 'hydra-ai' ); ?></option>
 					</select>
 				</p>

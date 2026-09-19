@@ -20,12 +20,9 @@ msgstr ""
 msgid "Anthropic Messages"
 msgstr ""
 
+#: includes/class-hydra-admin.php:294
 #: includes/class-hydra-protocols.php:78
 msgid "Chat Completions"
-msgstr ""
-
-#: includes/class-hydra-admin.php:294
-msgid "Chat Completions（OpenAI 兼容）"
 msgstr ""
 
 #: includes/class-hydra-admin.php:33
@@ -39,12 +36,12 @@ msgstr ""
 msgid "Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。"
 msgstr ""
 
-#: includes/class-hydra-protocols.php:80
-msgid "Responses API"
+#: includes/class-hydra-admin.php:295
+msgid "Responses"
 msgstr ""
 
-#: includes/class-hydra-admin.php:295
-msgid "Responses API（OpenAI 官方）"
+#: includes/class-hydra-protocols.php:80
+msgid "Responses API"
 msgstr ""
 
 #: includes/class-hydra-files.php:129
