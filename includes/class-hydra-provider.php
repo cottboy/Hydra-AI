@@ -47,6 +47,7 @@ class Hydra_Provider extends AbstractApiProvider {
 	 * @inheritDoc
 	 */
 	protected static function createProviderMetadata(): ProviderMetadata {
+		// logoPath 传 null：连接页不显示供应商图标。
 		return new ProviderMetadata(
 			HYDRA_AI_PROVIDER_ID,
 			__( 'Hydra AI', 'hydra-ai' ),
@@ -54,7 +55,7 @@ class Hydra_Provider extends AbstractApiProvider {
 			'',
 			RequestAuthenticationMethod::apiKey(),
 			__( '自定义 AI 供应商端点，支持 Chat Completions、Responses 与 Anthropic 三种协议，并提供按优先级的故障转移。', 'hydra-ai' ),
-			HYDRA_AI_DIR . 'assets/hydra.svg'
+			null
 		);
 	}
 

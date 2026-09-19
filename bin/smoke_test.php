@@ -48,7 +48,7 @@ assert_check( 'hydra-ai 已注册到 WP AI Client', $registry->hasProvider( 'hyd
 $metadata = Hydra_Provider::metadata();
 assert_check( '供应商元数据 ID 正确', 'hydra-ai' === $metadata->getId() );
 assert_check( '供应商元数据名称非空', '' !== $metadata->getName() );
-assert_check( '供应商 logo 文件存在', file_exists( HYDRA_AI_DIR . 'assets/hydra.svg' ) );
+assert_check( '供应商不设置图标', null === $metadata->getLogoPath() );
 
 /* ---------- 2. 配置清洗 ---------- */
 
