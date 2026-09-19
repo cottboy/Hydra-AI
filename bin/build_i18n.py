@@ -47,12 +47,11 @@ msgstr ""
             'API Key': 'API Key',
             'Anthropic Messages': 'Anthropic Messages',
             'Chat Completions': 'Chat Completions',
-            'Chat Completions（OpenAI 兼容）': 'Chat Completions (OpenAI-compatible)',
             'Hydra AI': 'Hydra AI',
             'Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。':
                 'Hydra AI has no enabled providers yet. Add one under Settings → Hydra AI.',
+            'Responses': 'Responses',
             'Responses API': 'Responses API',
-            'Responses API（OpenAI 官方）': 'Responses API (official OpenAI)',
             '优先级': 'Priority',
             '供应商': 'Provider',
             '供应商按列表顺序从上到下依次请求，失败时自动切换到下一个；拖动行可调整优先级。':

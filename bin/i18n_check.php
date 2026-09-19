@@ -24,7 +24,7 @@ $cases_en = array(
 	array( '确定要删除供应商“%s”吗？删除后不可恢复。', 'Delete the provider "%s"? This cannot be undone.' ),
 	array( '优先级', 'Priority' ),
 	array( '模型', 'Model' ),
-	array( 'Chat Completions（OpenAI 兼容）', 'Chat Completions (OpenAI-compatible)' ),
+	array( 'Responses', 'Responses' ),
 	array( '协议类型无效。', 'Invalid protocol type.' ),
 );
 echo "== en_US ==\n";
