@@ -454,6 +454,16 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 				if ( isset( $choice['finish_reason'] ) && null !== $choice['finish_reason'] ) {
 					$complete['choices'][ $index ]['finish_reason'] = $choice['finish_reason'];
 				}
+				if ( isset( $choice['logprobs'] ) && is_array( $choice['logprobs'] ) ) {
+					foreach ( array( 'content', 'refusal' ) as $field ) {
+						if ( isset( $choice['logprobs'][ $field ] ) && is_array( $choice['logprobs'][ $field ] ) ) {
+							$complete['choices'][ $index ]['logprobs'][ $field ] = array_merge(
+								$complete['choices'][ $index ]['logprobs'][ $field ] ?? array(),
+								$choice['logprobs'][ $field ]
+							);
+						}
+					}
+				}
 				$delta = isset( $choice['delta'] ) && is_array( $choice['delta'] ) ? $choice['delta'] : array();
 				foreach ( array( 'content', 'reasoning_content', 'refusal' ) as $field ) {
 					if ( isset( $delta[ $field ] ) && is_string( $delta[ $field ] ) ) {
@@ -563,13 +573,22 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 		if ( isset( $data['usage'] ) && is_array( $data['usage'] ) ) {
 			$additional['usage_details'] = $data['usage'];
 		}
-		$annotations    = array();
-		$audio_metadata = array();
-		foreach ( $data['choices'] as $choice ) {
+		$annotations      = array();
+		$audio_metadata   = array();
+		$content_metadata = array();
+		$choice_metadata  = array();
+		foreach ( $data['choices'] as $index => $choice ) {
 			$message = isset( $choice['message'] ) && is_array( $choice['message'] ) ? $choice['message'] : array();
 			foreach ( isset( $message['content'] ) && is_array( $message['content'] ) ? $message['content'] : array() as $item ) {
 				if ( is_array( $item ) && isset( $item['annotations'] ) && is_array( $item['annotations'] ) ) {
 					$annotations = array_merge( $annotations, $item['annotations'] );
+				}
+				if ( is_array( $item ) ) {
+					$metadata = $item;
+					unset( $metadata['text'], $metadata['data'], $metadata['b64_json'] );
+					if ( $metadata ) {
+						$content_metadata[] = $metadata;
+					}
 				}
 			}
 			if ( isset( $message['annotations'] ) && is_array( $message['annotations'] ) ) {
@@ -580,12 +599,29 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 				unset( $metadata['data'] );
 				$audio_metadata[] = $metadata;
 			}
+
+			$metadata = $choice;
+			unset( $metadata['index'], $metadata['message'], $metadata['finish_reason'] );
+			$message_metadata = $message;
+			unset( $message_metadata['role'], $message_metadata['content'], $message_metadata['reasoning_content'], $message_metadata['refusal'], $message_metadata['tool_calls'], $message_metadata['annotations'], $message_metadata['audio'] );
+			if ( $message_metadata ) {
+				$metadata['message'] = $message_metadata;
+			}
+			if ( $metadata ) {
+				$choice_metadata[ $index ] = $metadata;
+			}
 		}
 		if ( $annotations ) {
 			$additional['annotations'] = $annotations;
 		}
 		if ( $audio_metadata ) {
 			$additional['audio'] = $audio_metadata;
+		}
+		if ( $content_metadata ) {
+			$additional['content_metadata'] = $content_metadata;
+		}
+		if ( $choice_metadata ) {
+			$additional['choice_metadata'] = $choice_metadata;
 		}
 
 		return new GenerativeAiResult(

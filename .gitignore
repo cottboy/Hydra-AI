@@ -7,3 +7,6 @@ desktop.ini
 
 # Python 运行缓存
 __pycache__/
+
+# 本地脚本目录：翻译生成工具、测试与检查脚本，一律不提交
+/bin/
