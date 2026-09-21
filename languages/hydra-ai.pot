@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Hydra AI 1.0.0\n"
+"Project-Id-Version: Hydra AI 1.1.0\n"
 "Report-Msgid-Bugs-To: https://example.com/hydra-ai/issues\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,15 +25,35 @@ msgstr ""
 msgid "Chat Completions"
 msgstr ""
 
+#: includes/class-hydra-protocol-chat.php:63
+msgid "Chat Completions 协议不支持本次请求中的配置选项。"
+msgstr ""
+
+#: includes/class-hydra-protocol-chat.php:145
+msgid "Chat Completions 协议不支持请求该输出模态。"
+msgstr ""
+
 #: includes/class-hydra-admin.php:33
 #: includes/class-hydra-admin.php:34
 #: includes/class-hydra-admin.php:118
-#: includes/class-hydra-provider.php:52
+#: includes/class-hydra-provider.php:53
 msgid "Hydra AI"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:47
+#: includes/class-hydra-text-model.php:86
 msgid "Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:74
+msgid "Messages 协议不支持本次请求中的配置选项。"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:409
+msgid "Messages 协议不能同时设置允许和排除的网页搜索域名。"
+msgstr ""
+
+#: includes/class-hydra-protocol-anthropic.php:81
+msgid "Messages 协议仅支持文本输出。"
 msgstr ""
 
 #: includes/class-hydra-admin.php:295
@@ -42,6 +62,19 @@ msgstr ""
 
 #: includes/class-hydra-protocols.php:80
 msgid "Responses API"
+msgstr ""
+
+#: includes/class-hydra-protocol-responses.php:386
+msgid "Responses 协议不支持排除网页搜索域名。"
+msgstr ""
+
+#: includes/class-hydra-protocol-responses.php:67
+#: includes/class-hydra-protocol-responses.php:72
+msgid "Responses 协议不支持本次请求中的配置选项。"
+msgstr ""
+
+#: includes/class-hydra-protocol-responses.php:154
+msgid "Responses 协议不支持请求该输出模态。"
 msgstr ""
 
 #: includes/class-hydra-files.php:129
@@ -133,13 +166,13 @@ msgstr ""
 msgid "文件 URL 无效。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:265
-#: includes/class-hydra-protocol-anthropic.php:273
-#: includes/class-hydra-protocol-anthropic.php:313
-#: includes/class-hydra-protocol-chat.php:273
-#: includes/class-hydra-protocol-chat.php:280
-#: includes/class-hydra-protocol-responses.php:236
-#: includes/class-hydra-protocol-responses.php:243
+#: includes/class-hydra-protocol-anthropic.php:292
+#: includes/class-hydra-protocol-anthropic.php:300
+#: includes/class-hydra-protocol-anthropic.php:340
+#: includes/class-hydra-protocol-chat.php:336
+#: includes/class-hydra-protocol-chat.php:343
+#: includes/class-hydra-protocol-responses.php:310
+#: includes/class-hydra-protocol-responses.php:317
 msgid "文件消息部件缺少文件数据。"
 msgstr ""
 
@@ -155,13 +188,17 @@ msgstr ""
 msgid "最近一次故障转移（已成功）："
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:404
-#: includes/class-hydra-protocol-chat.php:374
-#: includes/class-hydra-protocol-responses.php:336
+#: includes/class-hydra-protocol-anthropic.php:529
+#: includes/class-hydra-protocol-chat.php:521
+#: includes/class-hydra-protocol-responses.php:438
 msgid "服务端返回了未知错误。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:126
+#: includes/class-hydra-stream.php:61
+msgid "服务端返回的流式响应无效。"
+msgstr ""
+
+#: includes/class-hydra-text-model.php:165
 msgid "未配置 API Key（条目与连接器中均未提供）。"
 msgstr ""
 
@@ -206,7 +243,7 @@ msgstr ""
 msgid "确定要删除供应商“%s”吗？删除后不可恢复。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:133
+#: includes/class-hydra-text-model.php:172
 msgid "端点地址无效。"
 msgstr ""
 
@@ -222,7 +259,7 @@ msgstr ""
 msgid "编辑供应商"
 msgstr ""
 
-#: includes/class-hydra-provider.php:56
+#: includes/class-hydra-provider.php:57
 msgid "自定义 AI 供应商端点，支持 Chat Completions、Responses 与 Anthropic 三种协议，并提供按优先级的故障转移。"
 msgstr ""
 
@@ -230,23 +267,18 @@ msgstr ""
 msgid "设置"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:343
-#: includes/class-hydra-protocol-chat.php:318
-#: includes/class-hydra-protocol-responses.php:284
+#: includes/class-hydra-protocol-anthropic.php:370
+#: includes/class-hydra-protocol-chat.php:377
+#: includes/class-hydra-protocol-responses.php:354
 msgid "该协议不支持此输入文件类型：%s"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:288
+#: includes/class-hydra-protocol-anthropic.php:315
 msgid "该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:327
+#: includes/class-hydra-protocol-anthropic.php:354
 msgid "该协议的文档输入仅支持 PDF 或纯文本。"
-msgstr ""
-
-#: includes/class-hydra-protocol-chat.php:303
-#: includes/class-hydra-protocol-responses.php:264
-msgid "该协议的文档输入仅支持 PDF。"
 msgstr ""
 
 #: includes/class-hydra-files.php:175
@@ -277,7 +309,7 @@ msgstr ""
 msgid "连接失败：%s"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:297
+#: includes/class-hydra-text-model.php:340
 msgid "连接成功。"
 msgstr ""
 

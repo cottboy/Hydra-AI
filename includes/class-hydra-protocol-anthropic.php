@@ -60,6 +60,29 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 	 * @inheritDoc
 	 */
 	public function build_params( array $prompt, ModelConfig $config, string $model_id ): array {
+		if (
+			null !== $config->getCandidateCount()
+			|| null !== $config->getPresencePenalty()
+			|| null !== $config->getFrequencyPenalty()
+			|| null !== $config->getLogprobs()
+			|| null !== $config->getTopLogprobs()
+			|| null !== $config->getOutputFileType()
+			|| null !== $config->getOutputMediaOrientation()
+			|| null !== $config->getOutputMediaAspectRatio()
+			|| null !== $config->getOutputSpeechVoice()
+		) {
+			throw new RuntimeException( __( 'Messages 协议不支持本次请求中的配置选项。', 'hydra-ai' ) );
+		}
+
+		$output_modalities = $config->getOutputModalities();
+		if ( is_array( $output_modalities ) ) {
+			foreach ( $output_modalities as $modality ) {
+				if ( ! $modality->isText() ) {
+					throw new RuntimeException( __( 'Messages 协议仅支持文本输出。', 'hydra-ai' ) );
+				}
+			}
+		}
+
 		$params = array(
 			'model'    => $model_id,
 			'messages' => $this->build_messages( $prompt ),
@@ -195,10 +218,14 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 				return null;
 			}
 			if ( $part->getChannel()->isThought() ) {
-				return array(
+				$thinking = array(
 					'type'     => 'thinking',
 					'thinking' => $text,
 				);
+				if ( null !== $part->getThoughtSignature() ) {
+					$thinking['signature'] = $part->getThoughtSignature();
+				}
+				return $thinking;
 			}
 			return array(
 				'type' => 'text',
@@ -376,14 +403,112 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		}
 
 		if ( $web_search ) {
-			$tools[] = array(
+			$allowed = $web_search->getAllowedDomains();
+			$blocked = $web_search->getDisallowedDomains();
+			if ( $allowed && $blocked ) {
+				throw new RuntimeException( __( 'Messages 协议不能同时设置允许和排除的网页搜索域名。', 'hydra-ai' ) );
+			}
+			$search_tool = array(
 				'type'     => 'web_search_20250305',
 				'name'     => 'web_search',
 				'max_uses' => 1,
 			);
+			if ( $allowed ) {
+				$search_tool['allowed_domains'] = array_values( $allowed );
+			} elseif ( $blocked ) {
+				$search_tool['blocked_domains'] = array_values( $blocked );
+			}
+			$tools[] = $search_tool;
 		}
 
 		return $tools;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function parse_stream_response(
+		string $body,
+		ProviderMetadata $provider_metadata,
+		ModelMetadata $model_metadata
+	): GenerativeAiResult {
+		$message = array(
+			'id'          => '',
+			'content'     => array(),
+			'stop_reason' => 'end_turn',
+			'usage'       => array(),
+		);
+		$blocks = array();
+
+		foreach ( Hydra_Stream::decode( $body ) as $event ) {
+			$data = $event['data'];
+			$type = isset( $data['type'] ) && is_string( $data['type'] ) ? $data['type'] : $event['event'];
+
+			if ( 'error' === $type && isset( $data['error'] ) && is_array( $data['error'] ) ) {
+				return $this->parse_response( array( 'error' => $data['error'] ), $provider_metadata, $model_metadata );
+			}
+
+			if ( 'message_start' === $type && isset( $data['message'] ) && is_array( $data['message'] ) ) {
+				$message = array_merge( $message, $data['message'] );
+				$message['content'] = array();
+				continue;
+			}
+
+			$index = isset( $data['index'] ) && is_numeric( $data['index'] ) ? (int) $data['index'] : 0;
+			if ( 'content_block_start' === $type && isset( $data['content_block'] ) && is_array( $data['content_block'] ) ) {
+				$blocks[ $index ] = $data['content_block'];
+				continue;
+			}
+
+			if ( 'content_block_delta' === $type && isset( $data['delta'] ) && is_array( $data['delta'] ) ) {
+				$delta = $data['delta'];
+				if ( ! isset( $blocks[ $index ] ) ) {
+					$blocks[ $index ] = array( 'type' => 'text', 'text' => '' );
+				}
+				switch ( isset( $delta['type'] ) ? (string) $delta['type'] : '' ) {
+					case 'text_delta':
+						$blocks[ $index ]['text'] = (string) ( $blocks[ $index ]['text'] ?? '' ) . (string) ( $delta['text'] ?? '' );
+						break;
+					case 'thinking_delta':
+						$blocks[ $index ]['thinking'] = (string) ( $blocks[ $index ]['thinking'] ?? '' ) . (string) ( $delta['thinking'] ?? '' );
+						break;
+					case 'signature_delta':
+						$blocks[ $index ]['signature'] = (string) ( $blocks[ $index ]['signature'] ?? '' ) . (string) ( $delta['signature'] ?? '' );
+						break;
+					case 'input_json_delta':
+						$blocks[ $index ]['_partial_json'] = (string) ( $blocks[ $index ]['_partial_json'] ?? '' ) . (string) ( $delta['partial_json'] ?? '' );
+						break;
+					case 'citations_delta':
+						if ( isset( $delta['citation'] ) && is_array( $delta['citation'] ) ) {
+							$blocks[ $index ]['citations'][] = $delta['citation'];
+						}
+						break;
+				}
+				continue;
+			}
+
+			if ( 'message_delta' === $type ) {
+				if ( isset( $data['delta'] ) && is_array( $data['delta'] ) ) {
+					$message = array_merge( $message, $data['delta'] );
+				}
+				if ( isset( $data['usage'] ) && is_array( $data['usage'] ) ) {
+					$message['usage'] = array_merge( isset( $message['usage'] ) && is_array( $message['usage'] ) ? $message['usage'] : array(), $data['usage'] );
+				}
+			}
+		}
+
+		ksort( $blocks );
+		foreach ( $blocks as &$block ) {
+			if ( isset( $block['_partial_json'] ) ) {
+				$input = json_decode( (string) $block['_partial_json'], true );
+				$block['input'] = is_array( $input ) ? $input : array();
+				unset( $block['_partial_json'] );
+			}
+		}
+		unset( $block );
+		$message['content'] = array_values( $blocks );
+
+		return $this->parse_response( $message, $provider_metadata, $model_metadata );
 	}
 
 	/**
@@ -409,8 +534,10 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			throw ResponseException::fromMissingData( $provider_name, 'content' );
 		}
 
-		$parts         = array();
-		$has_tool_call = false;
+		$parts          = array();
+		$citations      = array();
+		$unmapped       = array();
+		$has_tool_call  = false;
 
 		foreach ( $data['content'] as $block ) {
 			if ( ! is_array( $block ) || ! isset( $block['type'] ) ) {
@@ -422,11 +549,18 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 					if ( isset( $block['text'] ) && is_string( $block['text'] ) && '' !== $block['text'] ) {
 						$parts[] = new MessagePart( $block['text'] );
 					}
+					if ( isset( $block['citations'] ) && is_array( $block['citations'] ) ) {
+						$citations = array_merge( $citations, $block['citations'] );
+					}
 					break;
 
 				case 'thinking':
 					if ( isset( $block['thinking'] ) && is_string( $block['thinking'] ) && '' !== $block['thinking'] ) {
-						$parts[] = new MessagePart( $block['thinking'], MessagePartChannelEnum::thought() );
+						$parts[] = new MessagePart(
+							$block['thinking'],
+							MessagePartChannelEnum::thought(),
+							isset( $block['signature'] ) && is_string( $block['signature'] ) ? $block['signature'] : null
+						);
 					}
 					break;
 
@@ -446,7 +580,8 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 					break;
 
 				default:
-					// redacted_thinking、server_tool_use 等块暂不处理。
+					// WordPress 暂无对应 DTO 的服务端工具结果等内容保留在附加数据中。
+					$unmapped[] = $block;
 					break;
 			}
 		}
@@ -483,6 +618,20 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		$additional = array();
 		if ( isset( $data['model'] ) && is_string( $data['model'] ) && '' !== $data['model'] ) {
 			$additional['model'] = $data['model'];
+		}
+		foreach ( array( 'stop_sequence', 'container' ) as $key ) {
+			if ( isset( $data[ $key ] ) ) {
+				$additional[ $key ] = $data[ $key ];
+			}
+		}
+		if ( $unmapped ) {
+			$additional['unmapped_content'] = $unmapped;
+		}
+		if ( $usage ) {
+			$additional['usage_details'] = $usage;
+		}
+		if ( $citations ) {
+			$additional['citations'] = $citations;
 		}
 
 		return new GenerativeAiResult(

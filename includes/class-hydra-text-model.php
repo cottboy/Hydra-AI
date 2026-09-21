@@ -22,7 +22,10 @@ use WordPress\AiClient\Providers\Http\Exception\ResponseException;
 use WordPress\AiClient\Providers\Http\Util\ResponseUtil;
 use WordPress\AiClient\Providers\Models\DTO\ModelConfig;
 use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
+use WordPress\AiClient\Providers\Models\ImageGeneration\Contracts\ImageGenerationModelInterface;
+use WordPress\AiClient\Providers\Models\SpeechGeneration\Contracts\SpeechGenerationModelInterface;
 use WordPress\AiClient\Providers\Models\TextGeneration\Contracts\TextGenerationModelInterface;
+use WordPress\AiClient\Providers\Models\TextToSpeechConversion\Contracts\TextToSpeechConversionModelInterface;
 use WordPress\AiClient\Results\DTO\GenerativeAiResult;
 
 /**
@@ -34,12 +37,48 @@ use WordPress\AiClient\Results\DTO\GenerativeAiResult;
  *
  * @since 1.0.0
  */
-class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationModelInterface {
+class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationModelInterface, ImageGenerationModelInterface, SpeechGenerationModelInterface, TextToSpeechConversionModelInterface {
 
 	/**
 	 * @inheritDoc
 	 */
 	public function generateTextResult( array $prompt ): GenerativeAiResult {
+		return $this->generate_result( $prompt );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function generateImageResult( array $prompt ): GenerativeAiResult {
+		return $this->generate_result( $prompt );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function generateSpeechResult( array $prompt ): GenerativeAiResult {
+		return $this->generate_result( $prompt );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function convertTextToSpeechResult( array $prompt ): GenerativeAiResult {
+		return $this->generate_result( $prompt );
+	}
+
+	/**
+	 * 执行一次生成请求，并在条目间故障转移。
+	 *
+	 * 输出类型由 WordPress AI Client 写入 ModelConfig 的 outputModalities，
+	 * 协议转换器据此生成对应请求。
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array<int,Message> $prompt 消息列表。
+	 * @return GenerativeAiResult
+	 */
+	private function generate_result( array $prompt ): GenerativeAiResult {
 		$entries = Hydra_Settings::get_enabled_entries();
 
 		if ( ! $entries ) {
@@ -186,6 +225,10 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 		$data = $response->getData();
 		if ( ! is_array( $data ) ) {
+			$body = $response->getBody();
+			if ( is_string( $body ) && false !== strpos( $body, 'data:' ) ) {
+				return $protocol->parse_stream_response( $body, $this->providerMetadata(), $this->metadata() );
+			}
 			throw ResponseException::fromMissingData(
 				$this->providerMetadata()->getName(),
 				'body'
