@@ -444,11 +444,15 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		}
 
 		$parts          = array();
-		$file_parts     = array();
-		$file_metadata  = array();
-		$unmapped       = array();
-		$has_tool_call  = false;
-		$has_refusal    = false;
+		$file_parts         = array();
+		$file_metadata      = array();
+		$unmapped           = array();
+		$annotations        = array();
+		$content_metadata   = array();
+		$message_metadata   = array();
+		$reasoning_metadata = array();
+		$has_tool_call      = false;
+		$has_refusal        = false;
 
 		foreach ( $data['output'] as $output_item ) {
 			if ( ! is_array( $output_item ) ) {
@@ -459,14 +463,27 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 
 			// message 输出项：解析 content 数组。
 			if ( 'message' === $item_type && ! empty( $output_item['content'] ) && is_array( $output_item['content'] ) ) {
+				$metadata = $output_item;
+				unset( $metadata['content'] );
+				if ( $metadata ) {
+					$message_metadata[] = $metadata;
+				}
 				foreach ( $output_item['content'] as $content_item ) {
 					if ( ! is_array( $content_item ) ) {
 						continue;
 					}
 					$content_type = isset( $content_item['type'] ) ? (string) $content_item['type'] : '';
+					$metadata     = $content_item;
+					unset( $metadata['text'], $metadata['refusal'], $metadata['data'], $metadata['b64_json'], $metadata['file_data'] );
+					if ( $metadata ) {
+						$content_metadata[] = $metadata;
+					}
 
 					if ( ( 'output_text' === $content_type || 'text' === $content_type ) && isset( $content_item['text'] ) && is_string( $content_item['text'] ) ) {
 						$parts[] = new MessagePart( $content_item['text'] );
+						if ( isset( $content_item['annotations'] ) && is_array( $content_item['annotations'] ) ) {
+							$annotations = array_merge( $annotations, $content_item['annotations'] );
+						}
 						continue;
 					}
 					if ( 'refusal' === $content_type && isset( $content_item['refusal'] ) && is_string( $content_item['refusal'] ) ) {
@@ -501,6 +518,11 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 					if ( is_array( $summary ) && isset( $summary['text'] ) && is_string( $summary['text'] ) && '' !== $summary['text'] ) {
 						$parts[] = new MessagePart( $summary['text'], MessagePartChannelEnum::thought() );
 					}
+				}
+				$metadata = $output_item;
+				unset( $metadata['summary'] );
+				if ( $metadata ) {
+					$reasoning_metadata[] = $metadata;
 				}
 				continue;
 			}
@@ -574,6 +596,18 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		}
 		if ( $file_metadata ) {
 			$additional['generated_files'] = $file_metadata;
+		}
+		if ( $annotations ) {
+			$additional['annotations'] = $annotations;
+		}
+		if ( $content_metadata ) {
+			$additional['content_metadata'] = $content_metadata;
+		}
+		if ( $message_metadata ) {
+			$additional['messages'] = $message_metadata;
+		}
+		if ( $reasoning_metadata ) {
+			$additional['reasoning'] = $reasoning_metadata;
 		}
 
 		$candidates = array();

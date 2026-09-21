@@ -7,3 +7,8 @@ desktop.ini
 
 # Python 运行缓存
 __pycache__/
+
+# 本地测试与检查脚本
+/bin/*_test.php
+/bin/*_check.php
+/bin/mock_server.php
