@@ -14,7 +14,7 @@ LANG = ROOT / 'languages'
 POT_HEADER = """\
 msgid ""
 msgstr ""
-"Project-Id-Version: Hydra AI 1.0.0\\n"
+"Project-Id-Version: Hydra AI 1.1.0\\n"
 "Report-Msgid-Bugs-To: https://example.com/hydra-ai/issues\\n"
 "Last-Translator: \\n"
 "Language-Team: LANGUAGE <LL@li.org>\\n"
@@ -33,7 +33,7 @@ LOCALES = {
         """\
 msgid ""
 msgstr ""
-"Project-Id-Version: Hydra AI 1.0.0\\n"
+"Project-Id-Version: Hydra AI 1.1.0\\n"
 "Last-Translator: \\n"
 "Language-Team: English (United States)\\n"
 "Language: en_US\\n"
@@ -111,10 +111,18 @@ msgstr ""
             '远端文件内容为空。': 'The remote file is empty.',
             '该协议的音频输入仅支持 WAV 或 MP3 格式。': 'Audio input for this protocol only supports WAV or MP3.',
             '文件消息部件缺少文件数据。': 'The file message part is missing file data.',
-            '该协议的文档输入仅支持 PDF。': 'Document input for this protocol only supports PDF.',
             '该协议的文档输入仅支持 PDF 或纯文本。': 'Document input for this protocol only supports PDF or plain text.',
             '该协议不支持此输入文件类型：%s': 'This protocol does not support this input file type: %s',
             '该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。': 'Inline images for this protocol support JPEG, PNG, GIF, or WebP only.',
+            'Chat Completions 协议不支持请求该输出模态。': 'Chat Completions does not support the requested output modality.',
+            'Chat Completions 协议不支持本次请求中的配置选项。': 'Chat Completions does not support a configuration option in this request.',
+            'Responses 协议不支持请求该输出模态。': 'Responses does not support the requested output modality.',
+            'Responses 协议不支持本次请求中的配置选项。': 'Responses does not support a configuration option in this request.',
+            'Responses 协议不支持排除网页搜索域名。': 'Responses does not support excluded web search domains.',
+            'Messages 协议仅支持文本输出。': 'Messages only supports text output.',
+            'Messages 协议不支持本次请求中的配置选项。': 'Messages does not support a configuration option in this request.',
+            'Messages 协议不能同时设置允许和排除的网页搜索域名。': 'Messages cannot set allowed and excluded web search domains at the same time.',
+            '服务端返回的流式响应无效。': 'The server returned an invalid streaming response.',
         },
     ),
 }

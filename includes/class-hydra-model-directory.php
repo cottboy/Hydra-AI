@@ -8,6 +8,8 @@
 defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
+use WordPress\AiClient\Files\Enums\FileTypeEnum;
+use WordPress\AiClient\Files\Enums\MediaOrientationEnum;
 use WordPress\AiClient\Messages\Enums\ModalityEnum;
 use WordPress\AiClient\Providers\Contracts\ModelMetadataDirectoryInterface;
 use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
@@ -30,15 +32,19 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 	 */
 	public function listModelMetadata(): array {
 		$models = array();
-		$seen   = array();
+		$grouped = array();
 
 		foreach ( Hydra_Settings::get_enabled_entries() as $entry ) {
 			$model_id = isset( $entry['model'] ) ? (string) $entry['model'] : '';
 
-			if ( '' === $model_id || isset( $seen[ $model_id ] ) ) {
+			if ( '' === $model_id ) {
 				continue;
 			}
-			$seen[ $model_id ] = true;
+			$grouped[ $model_id ][] = $entry;
+		}
+
+		foreach ( $grouped as $model_id => $entries ) {
+			$entry = $entries[0];
 
 			$name = $model_id;
 			if ( isset( $entry['name'] ) && '' !== (string) $entry['name'] ) {
@@ -48,11 +54,8 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 			$models[] = new ModelMetadata(
 				$model_id,
 				$name,
-				array(
-					CapabilityEnum::textGeneration(),
-					CapabilityEnum::chatHistory(),
-				),
-				$this->supported_options()
+				$this->supported_capabilities( $entries ),
+				$this->supported_options( $entries )
 			);
 		}
 
@@ -88,44 +91,137 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 	}
 
 	/**
-	 * 声明全部条目统一支持的配置选项。
+	 * 按同一模型配置的协议合并 WordPress 生成能力。
 	 *
-	 * 输入模态覆盖三种协议可传递的全部组合（需求匹配是精确集合比较，
-	 * 必须逐一枚举）；具体某个模型是否真支持由故障转移兜底——不支持的
-	 * 条目会请求失败并自动切换到下一个。
+	 * @since 1.1.0
 	 *
-	 * @since 1.0.0
-	 *
-	 * @return array<int,SupportedOption>
+	 * @param array<int,array<string,mixed>> $entries 同一模型的启用条目。
+	 * @return array<int,CapabilityEnum>
 	 */
-	private function supported_options(): array {
-		$modality_combos = array(
-			array( ModalityEnum::text() ),
-			array( ModalityEnum::text(), ModalityEnum::image() ),
-			array( ModalityEnum::text(), ModalityEnum::audio() ),
-			array( ModalityEnum::text(), ModalityEnum::document() ),
-			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::audio() ),
-			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::document() ),
-			array( ModalityEnum::text(), ModalityEnum::audio(), ModalityEnum::document() ),
-			array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::audio(), ModalityEnum::document() ),
+	private function supported_capabilities( array $entries ): array {
+		$protocols    = array_column( $entries, 'protocol' );
+		$capabilities = array(
+			CapabilityEnum::textGeneration(),
+			CapabilityEnum::chatHistory(),
 		);
 
-		return array(
+		if ( in_array( 'responses', $protocols, true ) ) {
+			$capabilities[] = CapabilityEnum::imageGeneration();
+		}
+
+		if ( in_array( 'chat', $protocols, true ) ) {
+			$capabilities[] = CapabilityEnum::speechGeneration();
+			$capabilities[] = CapabilityEnum::textToSpeechConversion();
+		}
+
+		return $capabilities;
+	}
+
+	/**
+	 * 按同一模型实际配置的协议合并受支持选项。
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array<int,array<string,mixed>> $entries 同一模型的启用条目。
+	 * @return array<int,SupportedOption>
+	 */
+	private function supported_options( array $entries ): array {
+		$protocols       = array_column( $entries, 'protocol' );
+		$has_openai_input = in_array( 'chat', $protocols, true ) || in_array( 'responses', $protocols, true );
+
+		$input_modalities = array( ModalityEnum::text(), ModalityEnum::image(), ModalityEnum::document() );
+		if ( $has_openai_input ) {
+			$input_modalities[] = ModalityEnum::audio();
+		}
+		$modality_combos = $this->modality_combinations( $input_modalities );
+
+		$output_combos = array( array( ModalityEnum::text() ) );
+		$output_mimes  = array( 'text/plain', 'application/json' );
+		if ( in_array( 'responses', $protocols, true ) ) {
+			$output_combos[] = array( ModalityEnum::image() );
+			$output_combos[] = array( ModalityEnum::text(), ModalityEnum::image() );
+			$output_mimes[]  = 'image/png';
+			$output_mimes[]  = 'image/jpeg';
+			$output_mimes[]  = 'image/webp';
+		}
+		if ( in_array( 'chat', $protocols, true ) ) {
+			$output_combos[] = array( ModalityEnum::audio() );
+			$output_combos[] = array( ModalityEnum::text(), ModalityEnum::audio() );
+			$output_mimes[]  = 'audio/mpeg';
+			$output_mimes[]  = 'audio/ogg';
+			$output_mimes[]  = 'audio/wav';
+			$output_mimes[]  = 'audio/flac';
+			$output_mimes[]  = 'audio/pcm';
+		}
+
+		$options = array(
 			new SupportedOption( OptionEnum::systemInstruction() ),
 			new SupportedOption( OptionEnum::maxTokens() ),
 			new SupportedOption( OptionEnum::temperature() ),
 			new SupportedOption( OptionEnum::topP() ),
-			new SupportedOption( OptionEnum::topK() ),
-			new SupportedOption( OptionEnum::stopSequences() ),
-			new SupportedOption( OptionEnum::outputMimeType(), array( 'text/plain', 'application/json' ) ),
+			new SupportedOption( OptionEnum::outputMimeType(), array_values( array_unique( $output_mimes ) ) ),
 			new SupportedOption( OptionEnum::outputSchema() ),
 			new SupportedOption( OptionEnum::functionDeclarations() ),
 			new SupportedOption( OptionEnum::customOptions() ),
 			new SupportedOption( OptionEnum::inputModalities(), $modality_combos ),
-			new SupportedOption(
-				OptionEnum::outputModalities(),
-				array( array( ModalityEnum::text() ) )
-			),
+			new SupportedOption( OptionEnum::outputModalities(), $output_combos ),
 		);
+
+		if ( in_array( 'chat', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::candidateCount() );
+			$options[] = new SupportedOption( OptionEnum::presencePenalty() );
+			$options[] = new SupportedOption( OptionEnum::frequencyPenalty() );
+			$options[] = new SupportedOption( OptionEnum::logprobs() );
+			$options[] = new SupportedOption( OptionEnum::topLogprobs() );
+		}
+
+		if ( in_array( 'chat', $protocols, true ) || in_array( 'anthropic', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::stopSequences() );
+		}
+
+		if ( in_array( 'anthropic', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::topK() );
+		}
+
+		if ( in_array( 'responses', $protocols, true ) || in_array( 'anthropic', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::webSearch() );
+		}
+
+		if ( in_array( 'responses', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::outputFileType(), array( FileTypeEnum::inline() ) );
+			$options[] = new SupportedOption( OptionEnum::outputMediaOrientation(), array( MediaOrientationEnum::square(), MediaOrientationEnum::landscape(), MediaOrientationEnum::portrait() ) );
+			$options[] = new SupportedOption( OptionEnum::outputMediaAspectRatio(), array( '1:1', '3:2', '2:3' ) );
+		}
+
+		if ( in_array( 'chat', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::outputSpeechVoice() );
+		}
+
+		return $options;
+	}
+
+	/**
+	 * 生成非空模态组合，供 WordPress 做精确集合匹配。
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array<int,ModalityEnum> $modalities 可用模态。
+	 * @return array<int,array<int,ModalityEnum>>
+	 */
+	private function modality_combinations( array $modalities ): array {
+		$combinations = array();
+		$limit        = 1 << count( $modalities );
+
+		for ( $mask = 1; $mask < $limit; ++$mask ) {
+			$combination = array();
+			foreach ( $modalities as $index => $modality ) {
+				if ( $mask & ( 1 << $index ) ) {
+					$combination[] = $modality;
+				}
+			}
+			$combinations[] = $combination;
+		}
+
+		return $combinations;
 	}
 }

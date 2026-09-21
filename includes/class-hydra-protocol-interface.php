@@ -90,4 +90,20 @@ interface Hydra_Protocol_Interface {
 		ProviderMetadata $provider_metadata,
 		ModelMetadata $model_metadata
 	): GenerativeAiResult;
+
+	/**
+	 * 将完整 SSE 响应聚合为生成结果。
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param string           $body              SSE 响应正文。
+	 * @param ProviderMetadata $provider_metadata 供应商元数据。
+	 * @param ModelMetadata    $model_metadata    模型元数据。
+	 * @return GenerativeAiResult
+	 */
+	public function parse_stream_response(
+		string $body,
+		ProviderMetadata $provider_metadata,
+		ModelMetadata $model_metadata
+	): GenerativeAiResult;
 }

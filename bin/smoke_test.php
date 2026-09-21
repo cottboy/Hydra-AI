@@ -317,7 +317,7 @@ assert_check( 'Chat 远程音频自动下载内联(mp3)', $expected_b64 === $cha
 $resp = build_for( 'responses', file_prompt( 'http://127.0.0.1:8931/files/a.wav', 'audio/wav' ) );
 assert_check( 'Responses 远程音频自动下载内联(wav)', $expected_b64 === $resp[0]['content'][1]['data'] );
 
-// 文档：PDF 三协议行为，text/plain 仅 Anthropic 支持。
+// 文档：PDF 与纯文本按各协议文件内容块传递。
 $pdf = 'data:application/pdf;base64,UERG';
 $chat = build_for( 'chat', file_prompt( $pdf, 'application/pdf' ) );
 assert_check( 'Chat 内联 PDF 转 file 块', 'data:application/pdf;base64,UERG' === $chat[0]['content'][1]['file']['file_data'] );
@@ -335,13 +335,10 @@ assert_check( 'Anthropic 远程 PDF 转 url 源', 'url' === $anthro[0]['content'
 $txt = 'data:text/plain;base64,TVQ=';
 $anthro = build_for( 'anthropic', file_prompt( $txt, 'text/plain' ) );
 assert_check( 'Anthropic 内联纯文本文档', 'text/plain' === $anthro[0]['content'][1]['source']['media_type'] );
-$chat_throws = false;
-try {
-	build_for( 'chat', file_prompt( $txt, 'text/plain' ) );
-} catch ( Throwable $e ) {
-	$chat_throws = true;
-}
-assert_check( 'Chat 非法文档抛出走故障转移', $chat_throws );
+$chat = build_for( 'chat', file_prompt( $txt, 'text/plain' ) );
+assert_check( 'Chat 内联纯文本转 file 块', $txt === $chat[0]['content'][1]['file']['file_data'] );
+$resp = build_for( 'responses', file_prompt( $txt, 'text/plain' ) );
+assert_check( 'Responses 内联纯文本转 input_file', $txt === $resp[0]['content'][1]['file_data'] );
 
 // 远程纯文本文档：Anthropic 自动下载转 base64。
 $anthro = build_for( 'anthropic', file_prompt( 'http://127.0.0.1:8931/files/note.txt', 'text/plain' ) );
