@@ -35,6 +35,10 @@ use WordPress\AiClient\Tools\DTO\FunctionDeclaration;
  */
 class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 
+	use Hydra_Tool_Names;
+
+	private $output_audio_format = 'wav';
+
 	/**
 	 * @inheritDoc
 	 */
@@ -55,14 +59,14 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 	public function build_params( array $prompt, ModelConfig $config, string $model_id ): array {
 		if (
 			null !== $config->getTopK()
-			|| null !== $config->getWebSearch()
-			|| null !== $config->getOutputFileType()
+			|| ( null !== $config->getOutputFileType() && $config->getOutputFileType()->isRemote() )
 			|| null !== $config->getOutputMediaOrientation()
 			|| null !== $config->getOutputMediaAspectRatio()
 		) {
 			throw new RuntimeException( __( 'Chat Completions 协议不支持本次请求中的配置选项。', 'hydra-ai' ) );
 		}
 
+		$this->output_audio_format = $this->audio_format_from_mime( $config->getOutputMimeType() );
 		$params = array(
 			'model'    => $model_id,
 			'messages' => $this->build_messages( $prompt, $config ),
@@ -70,7 +74,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 
 		$max_tokens = $config->getMaxTokens();
 		if ( null !== $max_tokens ) {
-			$params['max_tokens'] = $max_tokens;
+			$params['max_completion_tokens'] = $max_tokens;
 		}
 
 		$temperature = $config->getTemperature();
@@ -133,6 +137,14 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 			$params['tools'] = $this->build_tools( $declarations );
 		}
 
+		if ( $config->getWebSearch() ) {
+			$search = $config->getWebSearch();
+			if ( $search->getAllowedDomains() || $search->getDisallowedDomains() ) {
+				throw new RuntimeException( __( 'Chat Completions 协议不支持网页搜索域名筛选。', 'hydra-ai' ) );
+			}
+			$params['web_search_options'] = new stdClass();
+		}
+
 		$output_modalities = $config->getOutputModalities();
 		if ( is_array( $output_modalities ) && $output_modalities ) {
 			$modalities = array();
@@ -153,7 +165,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 				}
 				$params['audio'] = array(
 					'voice'  => $config->getOutputSpeechVoice() ?? 'alloy',
-					'format' => $this->audio_format_from_mime( $config->getOutputMimeType() ),
+					'format' => $this->output_audio_format,
 				);
 			}
 			$params['modalities'] = array_values( array_unique( $modalities ) );
@@ -166,10 +178,16 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 		foreach ( $config->getCustomOptions() as $key => $value ) {
 			if ( array_key_exists( $key, $params ) ) {
 				throw new InvalidArgumentException(
-					sprintf( '自定义选项 "%s" 与已有参数冲突。', $key )
+					sprintf( __( '自定义选项“%s”与已有参数冲突。', 'hydra-ai' ), $key )
 				);
 			}
 			$params[ $key ] = $value;
+		}
+
+		if ( isset( $params['tool_choice']['function']['name'] ) && is_string( $params['tool_choice']['function']['name'] ) ) {
+			$params['tool_choice']['function']['name'] = $this->protocol_tool_name( $params['tool_choice']['function']['name'] );
+		} elseif ( isset( $params['tool_choice']['name'] ) && is_string( $params['tool_choice']['name'] ) ) {
+			$params['tool_choice']['name'] = $this->protocol_tool_name( $params['tool_choice']['name'] );
 		}
 
 		return $params;
@@ -265,7 +283,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 					'id'       => (string) $call->getId(),
 					'type'     => 'function',
 					'function' => array(
-						'name'      => (string) $call->getName(),
+						'name'      => $this->protocol_tool_name( (string) $call->getName() ),
 						'arguments' => wp_json_encode( $call->getArgs() ?? new stdClass() ),
 					),
 				);
@@ -404,7 +422,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 			$tools[] = array(
 				'type'     => 'function',
 				'function' => array(
-					'name'        => (string) $declaration->getName(),
+					'name'        => $this->protocol_tool_name( (string) $declaration->getName() ),
 					'description' => (string) $declaration->getDescription(),
 					'parameters'  => $parameters,
 				),
@@ -428,6 +446,9 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 		);
 
 		foreach ( Hydra_Stream::decode( $body ) as $event ) {
+			if ( isset( $event['data']['error'] ) ) {
+				return $this->parse_response( $event['data'], $provider_metadata, $model_metadata );
+			}
 			$chunk = $event['data'];
 			foreach ( array( 'id', 'model', 'service_tier', 'system_fingerprint' ) as $key ) {
 				if ( isset( $chunk[ $key ] ) ) {
@@ -446,7 +467,10 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 				if ( ! isset( $complete['choices'][ $index ] ) ) {
 					$complete['choices'][ $index ] = array(
 						'index'         => $index,
-						'message'       => array( 'role' => 'assistant', 'content' => '' ),
+						'message'       => array(
+							'role' => 'assistant',
+							'content' => ''
+						),
 						'finish_reason' => null,
 					);
 				}
@@ -490,7 +514,10 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 						$complete['choices'][ $index ]['message']['tool_calls'][ $tool_index ] = array(
 							'id'       => '',
 							'type'     => 'function',
-							'function' => array( 'name' => '', 'arguments' => '' ),
+							'function' => array(
+								'name' => '',
+								'arguments' => ''
+							),
 						);
 					}
 					if ( isset( $tool_delta['id'] ) && is_string( $tool_delta['id'] ) ) {
@@ -506,6 +533,11 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 			}
 		}
 
+		foreach ( $complete['choices'] as $choice ) {
+			if ( null === $choice['finish_reason'] ) {
+				throw new RuntimeException( __( '服务端返回的流式响应未完成。', 'hydra-ai' ) );
+			}
+		}
 		ksort( $complete['choices'] );
 		$complete['choices'] = array_values( $complete['choices'] );
 
@@ -673,7 +705,7 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 			if ( isset( $message_data['audio']['transcript'] ) && is_string( $message_data['audio']['transcript'] ) && '' !== $message_data['audio']['transcript'] ) {
 				$parts[] = new MessagePart( $message_data['audio']['transcript'] );
 			}
-			$mime    = $this->audio_mime_from_format( isset( $message_data['audio']['format'] ) ? (string) $message_data['audio']['format'] : 'wav' );
+			$mime    = $this->audio_mime_from_format( isset( $message_data['audio']['format'] ) ? (string) $message_data['audio']['format'] : $this->output_audio_format );
 			$parts[] = new MessagePart( new File( $message_data['audio']['data'], $mime ) );
 		}
 
@@ -686,17 +718,16 @@ class Hydra_Protocol_Chat implements Hydra_Protocol_Interface {
 
 				$function = $tool_call['function'];
 				$args     = null;
-				if ( isset( $function['arguments'] ) && is_string( $function['arguments'] ) ) {
-					$decoded = json_decode( $function['arguments'], true );
-					if ( is_array( $decoded ) && $decoded ) {
-						$args = $decoded;
-					}
+				if ( ! isset( $function['arguments'] ) || ! is_string( $function['arguments'] ) || ! is_object( json_decode( $function['arguments'] ) ) ) {
+					throw new RuntimeException( __( '工具调用参数必须是有效的 JSON 对象。', 'hydra-ai' ) );
 				}
+				$decoded = json_decode( $function['arguments'], true );
+				$args = $decoded ?: null;
 
 				$parts[] = new MessagePart(
 					new FunctionCall(
 						isset( $tool_call['id'] ) && is_string( $tool_call['id'] ) ? $tool_call['id'] : '',
-						isset( $function['name'] ) && is_string( $function['name'] ) ? $function['name'] : '',
+						isset( $function['name'] ) && is_string( $function['name'] ) ? $this->original_tool_name( $function['name'] ) : '',
 						$args
 					)
 				);

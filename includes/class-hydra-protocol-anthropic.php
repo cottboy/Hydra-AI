@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
 use WordPress\AiClient\Common\Exception\RuntimeException;
+use WordPress\AiClient\Common\Exception\TokenLimitReachedException;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessagePartChannelEnum;
@@ -34,6 +35,10 @@ use WordPress\AiClient\Tools\DTO\WebSearch;
  * @since 1.0.0
  */
 class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
+
+	use Hydra_Tool_Names;
+
+	private $requested_max_tokens = 4096;
 
 	/**
 	 * Anthropic API 版本号。
@@ -96,6 +101,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		// Anthropic 要求 max_tokens 必填。
 		$max_tokens = $config->getMaxTokens();
 		$params['max_tokens'] = null !== $max_tokens ? $max_tokens : 4096;
+		$this->requested_max_tokens = $params['max_tokens'];
 
 		$temperature = $config->getTemperature();
 		if ( null !== $temperature ) {
@@ -118,10 +124,11 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		}
 
 		if ( 'application/json' === $config->getOutputMimeType() && $config->getOutputSchema() ) {
-			$params['output_format'] = array(
-				'type'   => 'json_schema',
-				'schema' => $config->getOutputSchema(),
-			);
+			$params['output_config'] = array(
+				'format' => array(
+					'type'   => 'json_schema',
+					'schema' => $config->getOutputSchema(),
+				) );
 		}
 
 		$declarations = $config->getFunctionDeclarations();
@@ -133,12 +140,22 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 
 		// 自定义选项并入请求参数，冲突时报错。
 		foreach ( $config->getCustomOptions() as $key => $value ) {
+			if ( 'output_config' === $key && isset( $params['output_config'] ) && is_array( $value ) && ! array_key_exists( 'format', $value ) ) {
+				$params['output_config'] = array_merge( $params['output_config'], $value );
+				continue;
+			}
 			if ( array_key_exists( $key, $params ) ) {
 				throw new InvalidArgumentException(
-					sprintf( '自定义选项 "%s" 与已有参数冲突。', $key )
+					sprintf( __( '自定义选项“%s”与已有参数冲突。', 'hydra-ai' ), $key )
 				);
 			}
 			$params[ $key ] = $value;
+		}
+
+		if ( isset( $params['tool_choice']['function']['name'] ) && is_string( $params['tool_choice']['function']['name'] ) ) {
+			$params['tool_choice']['function']['name'] = $this->protocol_tool_name( $params['tool_choice']['function']['name'] );
+		} elseif ( isset( $params['tool_choice']['name'] ) && is_string( $params['tool_choice']['name'] ) ) {
+			$params['tool_choice']['name'] = $this->protocol_tool_name( $params['tool_choice']['name'] );
 		}
 
 		return $params;
@@ -148,14 +165,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 	 * @inheritDoc
 	 */
 	public function build_headers( ModelConfig $config ): array {
-		$headers = array( 'Content-Type' => 'application/json' );
-
-		// JSON Schema 结构化输出依赖 Beta 头。
-		if ( 'application/json' === $config->getOutputMimeType() && $config->getOutputSchema() ) {
-			$headers['anthropic-beta'] = 'structured-outputs-2025-11-13';
-		}
-
-		return $headers;
+		return array( 'Content-Type' => 'application/json' );
 	}
 
 	/**
@@ -214,23 +224,25 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 
 		if ( $type->isText() ) {
 			$text = (string) $part->getText();
-			if ( '' === $text ) {
-				return null;
-			}
 			if ( $part->getChannel()->isThought() ) {
-				$thinking = array(
-					'type'     => 'thinking',
-					'thinking' => $text,
-				);
-				if ( null !== $part->getThoughtSignature() ) {
-					$thinking['signature'] = $part->getThoughtSignature();
+				$signature = $part->getThoughtSignature();
+				$opaque = is_string( $signature ) ? json_decode( $signature, true ) : null;
+				if ( is_array( $opaque ) && 'messages' === ( $opaque['hydra_protocol'] ?? '' ) && is_array( $opaque['block'] ?? null ) ) {
+					return $opaque['block'];
 				}
-				return $thinking;
+				if ( ! is_string( $signature ) || '' === $signature ) {
+					return null;
+				}
+				return array(
+					'type' => 'thinking',
+					'thinking' => $text,
+					'signature' => $signature
+				);
 			}
-			return array(
+			return '' !== $text ? array(
 				'type' => 'text',
-				'text' => $text,
-			);
+				'text' => $text
+			) : null;
 		}
 
 		if ( $type->isFile() ) {
@@ -252,7 +264,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			return array(
 				'type'  => 'tool_use',
 				'id'    => (string) $call->getId(),
-				'name'  => (string) $call->getName(),
+				'name'  => $this->protocol_tool_name( (string) $call->getName() ),
 				'input' => $args,
 			);
 		}
@@ -277,7 +289,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 	 * 把文件部件转换为 Anthropic 内容块。
 	 *
 	 * 支持图片（内联 base64 或远程 URL，格式限 JPEG/PNG/GIF/WebP）与
-	 * 文档（PDF 远程 URL 或 base64，纯文本 base64）；音频、视频等其余
+	 * 文档（PDF 远程 URL 或 base64，纯文本正文）；音频、视频等其余
 	 * 类型不受 Anthropic 协议支持，抛出异常后由故障转移切换条目。
 	 *
 	 * @since 1.0.1
@@ -328,7 +340,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		/*
 		 * 文档输入：SDK 将 PDF 等归类为 isDocument()，纯文本文件归类为
 		 * isText()，两者 Anthropic 均支持。远程 PDF 直接传 URL；
-		 * 其余以内联 base64 提供，远程纯文本先下载内联。
+		 * PDF 以内联 base64 提供，远程纯文本先安全下载并解码为正文。
 		 */
 		if ( $file->isDocument() || $file->isText() ) {
 			$mime = strtolower( $file->getMimeType() );
@@ -357,9 +369,9 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			return array(
 				'type'   => 'document',
 				'source' => array(
-					'type'       => 'base64',
-					'media_type' => in_array( $mime, array( 'application/pdf' ), true ) ? 'application/pdf' : 'text/plain',
-					'data'       => Hydra_Files::to_base64( $file ),
+					'type'       => 'application/pdf' === $mime ? 'base64' : 'text',
+					'media_type' => 'application/pdf' === $mime ? 'application/pdf' : 'text/plain',
+					'data'       => 'application/pdf' === $mime ? Hydra_Files::to_base64( $file ) : (string) base64_decode( Hydra_Files::to_base64( $file ), true ),
 				),
 			);
 		}
@@ -396,7 +408,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			}
 
 			$tools[] = array(
-				'name'          => (string) $declaration->getName(),
+				'name'          => $this->protocol_tool_name( (string) $declaration->getName() ),
 				'description'   => (string) $declaration->getDescription(),
 				'input_schema'  => $schema,
 			);
@@ -432,10 +444,15 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		ProviderMetadata $provider_metadata,
 		ModelMetadata $model_metadata
 	): GenerativeAiResult {
+		return $this->parse_response( $this->decode_stream_response( $body ), $provider_metadata, $model_metadata );
+	}
+
+	/** 将完整事件流还原为 Messages 响应，供正常解析或暂停续接使用。 */
+	public function decode_stream_response( string $body ): array {
 		$message = array(
 			'id'          => '',
 			'content'     => array(),
-			'stop_reason' => 'end_turn',
+			'stop_reason' => null,
 			'usage'       => array(),
 		);
 		$blocks = array();
@@ -445,7 +462,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			$type = isset( $data['type'] ) && is_string( $data['type'] ) ? $data['type'] : $event['event'];
 
 			if ( 'error' === $type && isset( $data['error'] ) && is_array( $data['error'] ) ) {
-				return $this->parse_response( array( 'error' => $data['error'] ), $provider_metadata, $model_metadata );
+				return array( 'error' => $data['error'] );
 			}
 
 			if ( 'message_start' === $type && isset( $data['message'] ) && is_array( $data['message'] ) ) {
@@ -463,7 +480,10 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			if ( 'content_block_delta' === $type && isset( $data['delta'] ) && is_array( $data['delta'] ) ) {
 				$delta = $data['delta'];
 				if ( ! isset( $blocks[ $index ] ) ) {
-					$blocks[ $index ] = array( 'type' => 'text', 'text' => '' );
+					$blocks[ $index ] = array(
+						'type' => 'text',
+						'text' => ''
+					);
 				}
 				switch ( isset( $delta['type'] ) ? (string) $delta['type'] : '' ) {
 					case 'text_delta':
@@ -497,18 +517,24 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			}
 		}
 
+		if ( ! is_string( $message['stop_reason'] ) ) {
+			throw new RuntimeException( __( '服务端返回的流式响应未完成。', 'hydra-ai' ) );
+		}
 		ksort( $blocks );
 		foreach ( $blocks as &$block ) {
 			if ( isset( $block['_partial_json'] ) ) {
 				$input = json_decode( (string) $block['_partial_json'], true );
-				$block['input'] = is_array( $input ) ? $input : array();
+				if ( ! is_object( json_decode( (string) $block['_partial_json'] ) ) ) {
+					throw new RuntimeException( __( '工具调用参数必须是有效的 JSON 对象。', 'hydra-ai' ) );
+				}
+				$block['input'] = $input;
 				unset( $block['_partial_json'] );
 			}
 		}
 		unset( $block );
 		$message['content'] = array_values( $blocks );
 
-		return $this->parse_response( $message, $provider_metadata, $model_metadata );
+		return $message;
 	}
 
 	/**
@@ -530,6 +556,10 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			);
 		}
 
+		if ( in_array( $data['stop_reason'] ?? '', array( 'max_tokens', 'model_context_window_exceeded' ), true ) ) {
+			throw new TokenLimitReachedException( __( '生成内容已达到输出长度限制。', 'hydra-ai' ), $this->requested_max_tokens );
+		}
+
 		if ( empty( $data['content'] ) || ! is_array( $data['content'] ) ) {
 			throw ResponseException::fromMissingData( $provider_name, 'content' );
 		}
@@ -537,7 +567,8 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		$parts          = array();
 		$citations      = array();
 		$unmapped       = array();
-		$has_tool_call  = false;
+		$text_index     = null;
+		$text           = '';
 
 		foreach ( $data['content'] as $block ) {
 			if ( ! is_array( $block ) || ! isset( $block['type'] ) ) {
@@ -547,7 +578,11 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			switch ( (string) $block['type'] ) {
 				case 'text':
 					if ( isset( $block['text'] ) && is_string( $block['text'] ) && '' !== $block['text'] ) {
-						$parts[] = new MessagePart( $block['text'] );
+						if ( null === $text_index ) {
+							$text_index = count( $parts );
+							$parts[] = new MessagePart( '' );
+						}
+						$text .= $block['text'];
 					}
 					if ( isset( $block['citations'] ) && is_array( $block['citations'] ) ) {
 						$citations = array_merge( $citations, $block['citations'] );
@@ -555,7 +590,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 					break;
 
 				case 'thinking':
-					if ( isset( $block['thinking'] ) && is_string( $block['thinking'] ) && '' !== $block['thinking'] ) {
+					if ( isset( $block['thinking'] ) && is_string( $block['thinking'] ) ) {
 						$parts[] = new MessagePart(
 							$block['thinking'],
 							MessagePartChannelEnum::thought(),
@@ -565,6 +600,9 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 					break;
 
 				case 'tool_use':
+					if ( ! isset( $block['input'] ) || ! is_array( $block['input'] ) || ( $block['input'] && array_keys( $block['input'] ) === range( 0, count( $block['input'] ) - 1 ) ) ) {
+						throw new RuntimeException( __( '工具调用参数必须是有效的 JSON 对象。', 'hydra-ai' ) );
+					}
 					$args = isset( $block['input'] ) && is_array( $block['input'] ) && $block['input']
 						? $block['input']
 						: null;
@@ -572,20 +610,33 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 					$parts[] = new MessagePart(
 						new FunctionCall(
 							isset( $block['id'] ) && is_string( $block['id'] ) ? $block['id'] : '',
-							isset( $block['name'] ) && is_string( $block['name'] ) ? $block['name'] : '',
+							isset( $block['name'] ) && is_string( $block['name'] ) ? $this->original_tool_name( $block['name'] ) : '',
 							$args
 						)
 					);
-					$has_tool_call = true;
 					break;
 
 				default:
 					// WordPress 暂无对应 DTO 的服务端工具结果等内容保留在附加数据中。
 					$unmapped[] = $block;
+					// 用思考通道携带不可见协议状态，保证后续对话能够原样回传。
+					$parts[] = new MessagePart(
+                        '',
+                        MessagePartChannelEnum::thought(),
+                        (string) wp_json_encode(
+                            array(
+								'hydra_protocol' => 'messages',
+								'block' => $block
+                            )
+                        )
+                    );
 					break;
 			}
 		}
 
+		if ( null !== $text_index ) {
+			$parts[ $text_index ] = new MessagePart( $text );
+		}
 		if ( ! $parts ) {
 			throw ResponseException::fromMissingData( $provider_name, 'content[]' );
 		}
@@ -594,10 +645,6 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 
 		$stop_reason = isset( $data['stop_reason'] ) && is_string( $data['stop_reason'] ) ? $data['stop_reason'] : 'end_turn';
 		switch ( $stop_reason ) {
-			case 'max_tokens':
-			case 'model_context_window_exceeded':
-				$finish_reason = FinishReasonEnum::length();
-				break;
 			case 'refusal':
 				$finish_reason = FinishReasonEnum::contentFilter();
 				break;
@@ -614,11 +661,14 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			+ ( isset( $usage['cache_creation_input_tokens'] ) && is_numeric( $usage['cache_creation_input_tokens'] ) ? (int) $usage['cache_creation_input_tokens'] : 0 )
 			+ ( isset( $usage['cache_read_input_tokens'] ) && is_numeric( $usage['cache_read_input_tokens'] ) ? (int) $usage['cache_read_input_tokens'] : 0 );
 		$output_tokens = isset( $usage['output_tokens'] ) && is_numeric( $usage['output_tokens'] ) ? (int) $usage['output_tokens'] : 0;
+		$output_details = isset( $usage['output_tokens_details'] ) && is_array( $usage['output_tokens_details'] ) ? $usage['output_tokens_details'] : array();
+		$thought_tokens = isset( $output_details['thinking_tokens'] ) && is_numeric( $output_details['thinking_tokens'] ) ? (int) $output_details['thinking_tokens'] : null;
 
 		$additional = array();
 		if ( isset( $data['model'] ) && is_string( $data['model'] ) && '' !== $data['model'] ) {
 			$additional['model'] = $data['model'];
 		}
+		$additional['stop_reason'] = $stop_reason;
 		foreach ( array( 'stop_sequence', 'container' ) as $key ) {
 			if ( isset( $data[ $key ] ) ) {
 				$additional[ $key ] = $data[ $key ];
@@ -637,7 +687,7 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 		return new GenerativeAiResult(
 			isset( $data['id'] ) && is_string( $data['id'] ) ? $data['id'] : '',
 			array( new Candidate( $result, $finish_reason ) ),
-			new TokenUsage( $input_tokens, $output_tokens, $input_tokens + $output_tokens ),
+			new TokenUsage( $input_tokens, $output_tokens, $input_tokens + $output_tokens, $thought_tokens ),
 			$provider_metadata,
 			$model_metadata,
 			$additional

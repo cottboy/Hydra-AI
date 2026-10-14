@@ -73,8 +73,7 @@ class Hydra_Files {
 	/**
 	 * 下载远端文件并返回 base64 数据。
 	 *
-	 * 与供应商请求一致，仅在单次抓取期间放开 WordPress 对内网地址的
-	 * 限制，方便本地大模型流水线引用同机文件。
+	 * 文件地址可能来自普通用户输入，始终使用 WordPress 的安全下载限制。
 	 *
 	 * @since 1.0.1
 	 *
@@ -90,37 +89,13 @@ class Hydra_Files {
 			throw new RuntimeException( __( '文件 URL 无效。', 'hydra-ai' ) );
 		}
 
-		$allow_external = static function () {
-			return true;
-		};
-		add_filter( 'http_request_host_is_external', $allow_external );
-
-		$port = (int) wp_parse_url( $url, PHP_URL_PORT );
-		$allow_port = null;
-		if ( $port > 0 ) {
-			$allow_port = static function ( $ports ) use ( $port ) {
-				$ports = is_array( $ports ) ? $ports : array();
-				$ports[] = $port;
-
-				return $ports;
-			};
-			add_filter( 'http_allowed_safe_ports', $allow_port );
-		}
-
-		try {
-			$response = wp_safe_remote_get(
-				$url,
-				array(
-					'timeout'             => self::REMOTE_TIMEOUT,
-					'limit_response_size' => self::MAX_REMOTE_BYTES,
-				)
-			);
-		} finally {
-			remove_filter( 'http_request_host_is_external', $allow_external );
-			if ( null !== $allow_port ) {
-				remove_filter( 'http_allowed_safe_ports', $allow_port );
-			}
-		}
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'timeout'             => self::REMOTE_TIMEOUT,
+				'limit_response_size' => self::MAX_REMOTE_BYTES + 1,
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
 			throw new RuntimeException(
@@ -144,6 +119,9 @@ class Hydra_Files {
 		}
 
 		$body = (string) wp_remote_retrieve_body( $response );
+		if ( strlen( $body ) > self::MAX_REMOTE_BYTES ) {
+			throw new RuntimeException( __( '远端文件超过 25MB 大小限制。', 'hydra-ai' ) );
+		}
 		if ( '' === $body ) {
 			throw new RuntimeException( __( '远端文件内容为空。', 'hydra-ai' ) );
 		}

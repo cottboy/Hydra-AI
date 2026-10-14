@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:  Hydra AI
- * Description:  在 WordPress 连接中注册一个自定义 AI 供应商，支持 OpenAI Chat、OpenAI Responses 与 Anthropic 三种协议，可自由配置端点，并按优先级从上到下自动故障转移。
- * Version:      1.1.0
+ * Description:  在 WordPress 连接中注册多个自定义 AI 供应商，支持 Chat Completions、Responses 与 Anthropic Messages 协议，可自由配置端点并自动故障转移。
+ * Version:      2.0.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author:       Hydra AI
@@ -16,25 +16,22 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'HYDRA_AI_VERSION', '1.1.0' );
+define( 'HYDRA_AI_VERSION', '2.0.0' );
 define( 'HYDRA_AI_FILE', __FILE__ );
 define( 'HYDRA_AI_DIR', plugin_dir_path( __FILE__ ) );
 define( 'HYDRA_AI_URL', plugin_dir_url( __FILE__ ) );
 define( 'HYDRA_AI_SLUG', 'hydra-ai' );
 /** 供应商条目存储的选项名。 */
-define( 'HYDRA_AI_OPTION', 'hydra_ai_providers' );
-/** 注册到 WP AI Client 的供应商 ID，同时是连接器 ID。 */
-define( 'HYDRA_AI_PROVIDER_ID', 'hydra-ai' );
-/** 连接器界面保存的 API Key 选项名（由 WordPress 连接器命名规则生成）。 */
-define( 'HYDRA_AI_CONNECTOR_KEY_OPTION', 'connectors_ai_hydra_ai_api_key' );
-/** 供应商条目数量上限，防止配置无限膨胀。 */
-define( 'HYDRA_AI_MAX_ENTRIES', 50 );
+define( 'HYDRA_AI_OPTION', 'hydra_ai_profiles' );
+/** 当前设置页选中的配置 ID。 */
+define( 'HYDRA_AI_ACTIVE_PROFILE_OPTION', 'hydra_ai_active_profile' );
 
 require_once HYDRA_AI_DIR . 'includes/class-hydra-ai.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-files.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-settings.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-stream.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-interface.php';
+require_once HYDRA_AI_DIR . 'includes/trait-hydra-tool-names.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-chat.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-responses.php';
 require_once HYDRA_AI_DIR . 'includes/class-hydra-protocol-anthropic.php';
@@ -62,10 +59,9 @@ function hydra_ai_load_textdomain(): void {
 add_action( 'init', 'hydra_ai_load_textdomain', 1 );
 
 /**
- * 将 Hydra AI 注册到 WP AI Client 供应商注册表。
+ * 将所有命名配置注册到 WP AI Client 供应商注册表。
  *
- * 注册完成后，WordPress 7.0+ 的连接器 API 会自动为 Hydra AI
- * 创建一个 ai_provider 类型的连接器（init 15 触发）。
+ * 注册完成后，WordPress 7.0+ 的连接器 API 会按配置名称创建 ai_provider 连接器。
  *
  * @since 1.0.0
  *
@@ -80,13 +76,7 @@ function hydra_ai_register_provider(): void {
 		return;
 	}
 
-	$registry = \WordPress\AiClient\AiClient::defaultRegistry();
-
-	if ( $registry->hasProvider( HYDRA_AI_PROVIDER_ID ) || $registry->hasProvider( Hydra_Provider::class ) ) {
-		return;
-	}
-
-	$registry->registerProvider( Hydra_Provider::class );
+	Hydra_Provider::register_all();
 }
 add_action( 'init', 'hydra_ai_register_provider', 5 );
 

@@ -1,238 +1,261 @@
 <?php
 /**
- * 供应商条目的存储、读取与清洗。
+ * Hydra AI 配置的保存、读取和输入清洗。
  *
  * @package Hydra_AI
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * 供应商配置存取。
- *
- * 所有条目以有序数组形式存于单个选项中，数组顺序即故障转移优先级。
- *
- * @since 1.0.0
- */
+/** 管理命名配置及其接口条目。 */
 class Hydra_Settings {
-
-	/**
-	 * 允许的协议 ID 列表。
-	 *
-	 * @var array<int,string>
-	 */
 	const PROTOCOLS = array( 'chat', 'responses', 'anthropic' );
 
-	/**
-	 * 获取全部供应商条目（保持用户排序）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array<int,array<string,mixed>>
-	 */
-	public static function get_entries(): array {
-		$entries = get_option( HYDRA_AI_OPTION, array() );
-
-		return is_array( $entries ) ? array_values( $entries ) : array();
-	}
-
-	/**
-	 * 获取全部已启用的供应商条目（保持用户排序）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array<int,array<string,mixed>>
-	 */
-	public static function get_enabled_entries(): array {
-		$entries = array();
-
-		foreach ( self::get_entries() as $entry ) {
-			if ( ! empty( $entry['enabled'] ) ) {
-				$entries[] = $entry;
+	public static function get_profiles(): array {
+		$profiles = get_option( HYDRA_AI_OPTION, null );
+		if ( null === $profiles ) {
+			$profiles = array( self::default_profile() );
+			self::save_profiles( $profiles );
+		}
+		if ( ! is_array( $profiles ) ) {
+			return array();
+		}
+		$clean = array();
+		foreach ( $profiles as $profile ) {
+			if ( is_array( $profile ) && ! empty( $profile['id'] ) ) {
+				$clean[] = self::normalize_profile( $profile );
 			}
 		}
-
-		return $entries;
+		return array_values( $clean );
 	}
 
-	/**
-	 * 根据 ID 查找条目。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $id 条目 ID。
-	 * @return array<string,mixed>|null
-	 */
-	public static function get_entry( string $id ): ?array {
-		foreach ( self::get_entries() as $entry ) {
+	public static function save_profiles( array $profiles ): void {
+		update_option( HYDRA_AI_OPTION, array_values( $profiles ), false );
+	}
+
+	public static function default_profile(): array {
+		return array(
+			'id' => 'hydra-ai',
+			'name' => __( 'Hydra AI', 'hydra-ai' ),
+			'entries' => array()
+		);
+	}
+
+	public static function normalize_profile( array $profile ): array {
+		$id = sanitize_key( (string) ( $profile['id'] ?? '' ) );
+		$name = sanitize_text_field( (string) ( $profile['name'] ?? '' ) );
+		$entries = is_array( $profile['entries'] ?? null ) ? $profile['entries'] : array();
+		$clean = array();
+		foreach ( $entries as $entry ) {
+			if ( is_array( $entry ) && ! empty( $entry['id'] ) ) {
+				$normalized = self::normalize_entry( $entry );
+				if ( $normalized ) {
+					$clean[] = $normalized;
+				}
+			}
+		}
+		return array(
+			'id' => '' !== $id ? $id : self::generate_id( 'hydra-profile' ),
+			'name' => '' !== $name ? mb_substr( $name, 0, 100 ) : __( 'Hydra AI', 'hydra-ai' ),
+			'entries' => array_values( $clean ),
+		);
+	}
+
+	public static function get_profile( string $id ): ?array {
+		foreach ( self::get_profiles() as $profile ) {
+			if ( isset( $profile['id'] ) && hash_equals( (string) $profile['id'], $id ) ) {
+				return $profile;
+			}
+		}
+		return null;
+	}
+
+	public static function get_active_profile_id(): string {
+		$active = sanitize_key( (string) get_option( HYDRA_AI_ACTIVE_PROFILE_OPTION, '' ) );
+		$profiles = self::get_profiles();
+		if ( $active && self::get_profile( $active ) ) {
+			return $active;
+		}
+		return isset( $profiles[0]['id'] ) ? (string) $profiles[0]['id'] : '';
+	}
+
+	public static function set_active_profile( string $id ): bool {
+		if ( ! self::get_profile( $id ) ) {
+			return false;
+		}
+		update_option( HYDRA_AI_ACTIVE_PROFILE_OPTION, $id, false );
+		return true;
+	}
+
+	public static function get_active_profile(): ?array {
+		$id = self::get_active_profile_id();
+		return '' !== $id ? self::get_profile( $id ) : null;
+	}
+
+	public static function get_profile_entries( string $profile_id ): array {
+		$profile = self::get_profile( $profile_id );
+		return $profile && is_array( $profile['entries'] ?? null ) ? array_values( $profile['entries'] ) : array();
+	}
+
+	public static function get_enabled_entries( ?string $profile_id = null ): array {
+		$entries = self::get_profile_entries( $profile_id ?: self::get_active_profile_id() );
+		return array_values(
+            array_filter(
+                $entries,
+                static function ( $entry ): bool { return is_array( $entry ) && ! empty( $entry['enabled'] );
+				}
+            )
+        );
+	}
+
+	public static function get_entry( string $id, ?string $profile_id = null ): ?array {
+		foreach ( self::get_profile_entries( $profile_id ?: self::get_active_profile_id() ) as $entry ) {
 			if ( isset( $entry['id'] ) && hash_equals( (string) $entry['id'], $id ) ) {
 				return $entry;
 			}
 		}
-
 		return null;
 	}
 
-	/**
-	 * 保存全部条目。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<int,array<string,mixed>> $entries 已清洗的条目列表。
-	 * @return void
-	 */
-	public static function save_entries( array $entries ): void {
-		update_option( HYDRA_AI_OPTION, array_values( $entries ), false );
+	public static function create_profile( string $name ) {
+		$name = self::sanitize_profile_name( $name );
+		if ( is_wp_error( $name ) ) { return $name; }
+		$profiles = self::get_profiles();
+		foreach ( $profiles as $profile ) {
+			if ( 0 === strcasecmp( (string) $profile['name'], $name ) ) {
+				return new WP_Error( 'hydra_ai_duplicate_profile', __( '这个配置名称已经存在。', 'hydra-ai' ) );
+			}
+		}
+		$profile = array(
+			'id' => self::generate_id( 'hydra-profile' ),
+			'name' => $name,
+			'entries' => array()
+		);
+		$profiles[] = $profile;
+		self::save_profiles( $profiles );
+		self::set_active_profile( $profile['id'] );
+		return $profile;
 	}
 
-	/**
-	 * 生成新的条目 ID。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string
-	 */
-	public static function generate_id(): string {
-		return substr( md5( uniqid( 'hydra', true ) ), 0, 12 );
+	public static function rename_profile( string $id, string $name ) {
+		$name = self::sanitize_profile_name( $name );
+		if ( is_wp_error( $name ) ) { return $name; }
+		$profiles = self::get_profiles();
+		$found = false;
+		foreach ( $profiles as $index => $profile ) {
+			if ( hash_equals( (string) $profile['id'], $id ) ) {
+				$found = true;
+				$profiles[ $index ]['name'] = $name;
+			} elseif ( 0 === strcasecmp( (string) $profile['name'], $name ) ) {
+				return new WP_Error( 'hydra_ai_duplicate_profile', __( '这个配置名称已经存在。', 'hydra-ai' ) );
+			}
+		}
+		if ( ! $found ) { return new WP_Error( 'hydra_ai_profile_missing', __( '配置不存在。', 'hydra-ai' ) ); }
+		self::save_profiles( $profiles );
+		return self::get_profile( $id );
 	}
 
-	/**
-	 * 清洗一组用户提交的条目数据。
-	 *
-	 * 编辑已有条目时传入 $existing，API Key 留空表示保持原值。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<string,mixed>           $raw      原始输入（未信任）。
-	 * @param array<string,mixed>|null      $existing 数据库中的原条目。
-	 * @return array<string,mixed>|WP_Error 清洗后的条目，或校验错误。
-	 */
+	public static function delete_profile( string $id ): bool {
+		$profiles = self::get_profiles();
+		$active = self::get_active_profile_id();
+		$kept = array_values(
+            array_filter(
+                $profiles,
+                static function ( $profile ) use ( $id ): bool { return ! hash_equals( (string) ( $profile['id'] ?? '' ), $id );
+				}
+            )
+        );
+		if ( count( $kept ) === count( $profiles ) ) { return false; }
+		self::save_profiles( $kept );
+		if ( $active === $id ) { update_option( HYDRA_AI_ACTIVE_PROFILE_OPTION, isset( $kept[0]['id'] ) ? $kept[0]['id'] : '', false ); }
+		delete_option( self::connector_key_option( $id ) );
+		delete_transient( 'hydra_ai_last_failover_' . $id );
+		return true;
+	}
+
+	public static function save_profile_entries( string $profile_id, array $entries ): bool {
+		$profiles = self::get_profiles();
+		foreach ( $profiles as $index => $profile ) {
+			if ( hash_equals( (string) $profile['id'], $profile_id ) ) {
+				$profiles[ $index ]['entries'] = array_values( $entries );
+				self::save_profiles( $profiles );
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function sanitize_entry( array $raw, ?array $existing = null ) {
-		// 协议必须在白名单内。
-		$protocol = isset( $raw['protocol'] ) ? sanitize_key( (string) $raw['protocol'] ) : '';
-		if ( ! in_array( $protocol, self::PROTOCOLS, true ) ) {
-			return new WP_Error( 'hydra_ai_invalid_protocol', __( '协议类型无效。', 'hydra-ai' ) );
-		}
-
-		// 名称：必填，超长截断。
-		$name = isset( $raw['name'] ) ? sanitize_text_field( (string) $raw['name'] ) : '';
-		if ( '' === $name ) {
-			return new WP_Error( 'hydra_ai_empty_name', __( '请填写供应商名称。', 'hydra-ai' ) );
-		}
-		$name = mb_substr( $name, 0, 100 );
-
-		// 模型：必填，作为请求中的 model 参数。
-		$model = isset( $raw['model'] ) ? sanitize_text_field( (string) $raw['model'] ) : '';
-		if ( '' === $model ) {
-			return new WP_Error( 'hydra_ai_empty_model', __( '请填写模型名称。', 'hydra-ai' ) );
-		}
-		$model = mb_substr( $model, 0, 200 );
-
-		// API Key：留空时保持数据库中的原值。
-		$api_key = isset( $raw['api_key'] ) ? trim( (string) wp_unslash( $raw['api_key'] ) ) : '';
-		if ( '' !== $api_key ) {
-			$api_key = sanitize_text_field( $api_key );
-			$api_key = mb_substr( $api_key, 0, 500 );
-		} elseif ( $existing && isset( $existing['api_key'] ) ) {
-			$api_key = (string) $existing['api_key'];
-		}
-
+		$protocol = sanitize_key( (string) ( $raw['protocol'] ?? '' ) );
+		if ( ! in_array( $protocol, self::PROTOCOLS, true ) ) { return new WP_Error( 'hydra_ai_invalid_protocol', __( '协议类型无效。', 'hydra-ai' ) ); }
+		$name = mb_substr( sanitize_text_field( (string) ( $raw['name'] ?? '' ) ), 0, 100 );
+		$model = mb_substr( sanitize_text_field( (string) ( $raw['model'] ?? '' ) ), 0, 200 );
+		if ( '' === $name || '' === $model ) { return new WP_Error( 'hydra_ai_missing_entry_field', __( '请填写接口名称和模型名称。', 'hydra-ai' ) ); }
+		$api_key = trim( (string) ( $raw['api_key'] ?? '' ) );
+		$api_key = '' !== $api_key ? mb_substr( sanitize_text_field( $api_key ), 0, 500 ) : (string) ( $existing['api_key'] ?? '' );
+		$endpoint = self::sanitize_endpoint( (string) ( $raw['endpoint'] ?? '' ), $protocol );
+		if ( is_wp_error( $endpoint ) ) { return $endpoint; }
 		return array(
-			'id'       => $existing && isset( $existing['id'] ) ? (string) $existing['id'] : self::generate_id(),
-			'name'     => $name,
+			'id' => (string) ( $existing['id'] ?? self::generate_id( 'entry' ) ),
+			'name' => $name,
 			'protocol' => $protocol,
-			'endpoint' => self::sanitize_endpoint( isset( $raw['endpoint'] ) ? (string) wp_unslash( $raw['endpoint'] ) : '', $protocol ),
-			'api_key'  => $api_key,
-			'model'    => $model,
-			'enabled'  => ! empty( $raw['enabled'] ),
+			'endpoint' => $endpoint,
+			'api_key' => $api_key,
+			'model' => $model,
+			'enabled' => ! empty( $raw['enabled'] )
 		);
 	}
 
-	/**
-	 * 清洗端点 URL：仅允许 http/https，必须是合法 URL。
-	 *
-	 * 端点为“基础地址”，协议路径（如 /chat/completions）由插件自动拼接；
-	 * 留空时回退到协议默认端点。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $url      用户输入的端点。
-	 * @param string $protocol 协议 ID。
-	 * @return string
-	 */
-	public static function sanitize_endpoint( string $url, string $protocol ): string {
-		$url = trim( $url );
+	public static function normalize_entry( array $entry ): array {
+		$clean = self::sanitize_entry( $entry, $entry );
+		return is_wp_error( $clean ) ? array() : $clean;
+	}
 
+	/** 校验接口地址。错误地址必须报错，避免把密钥发往其他默认地址。 */
+	public static function sanitize_endpoint( string $url, string $protocol ) {
+		$url = trim( $url );
 		if ( '' === $url ) {
 			return Hydra_Protocols::get_default_endpoint( $protocol );
 		}
-
-		$url = esc_url_raw( $url, array( 'http', 'https' ) );
-
-		// esc_url_raw 对明显非法的输入返回空串，这里再做一次主机名校验。
-		$host = (string) wp_parse_url( $url, PHP_URL_HOST );
-		if ( '' === $url || '' === $host ) {
-			return Hydra_Protocols::get_default_endpoint( $protocol );
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), array( 'http', 'https' ), true ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['query'] ) || isset( $parts['fragment'] ) || preg_match( '/[\x00-\x20\x7f]/', $url ) ) {
+			return new WP_Error( 'hydra_ai_invalid_endpoint', __( '请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。', 'hydra-ai' ) );
 		}
-
-		return rtrim( $url, '/' );
+		return rtrim( esc_url_raw( $url, array( 'http', 'https' ) ), '/' );
 	}
 
-	/**
-	 * 解析某个条目实际使用的 API Key。
-	 *
-	 * 优先级：条目自身密钥 > 连接器密钥（数据库 / 常量 HYDRA_AI_API_KEY）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<string,mixed> $entry 供应商条目。
-	 * @return string 找不到密钥时返回空字符串。
-	 */
-	public static function resolve_api_key( array $entry ): string {
-		if ( isset( $entry['api_key'] ) && '' !== (string) $entry['api_key'] ) {
+	/** 每个配置只读取自己的环境变量、常量或 WordPress 连接密钥。 */
+	public static function resolve_api_key( array $entry, ?string $profile_id = null ): string {
+		if ( '' !== (string) ( $entry['api_key'] ?? '' ) ) {
 			return (string) $entry['api_key'];
 		}
-
-		// WordPress 连接器界面保存的密钥。
-		$connector_key = (string) get_option( HYDRA_AI_CONNECTOR_KEY_OPTION, '' );
-		if ( '' !== $connector_key ) {
-			return $connector_key;
+		$profile_id = $profile_id ?: self::get_active_profile_id();
+		$key_name = strtoupper( str_replace( '-', '_', $profile_id ) ) . '_API_KEY';
+		$env = getenv( $key_name );
+		if ( is_string( $env ) && '' !== $env ) {
+			return $env;
 		}
-
-		// 支持通过常量或环境变量提供默认密钥。
-		if ( defined( 'HYDRA_AI_API_KEY' ) && is_string( HYDRA_AI_API_KEY ) && '' !== HYDRA_AI_API_KEY ) {
-			return HYDRA_AI_API_KEY;
+		if ( defined( $key_name ) && is_string( constant( $key_name ) ) && '' !== constant( $key_name ) ) {
+			return constant( $key_name );
 		}
-		$env_key = getenv( 'HYDRA_AI_API_KEY' );
-		if ( is_string( $env_key ) && '' !== $env_key ) {
-			return $env_key;
-		}
-
-		return '';
+		$key = get_option( self::connector_key_option( $profile_id ), '' );
+		return is_string( $key ) ? $key : '';
 	}
 
-	/**
-	 * 记录最近一次故障转移摘要，供设置页展示。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<string,mixed> $summary 摘要数据。
-	 * @return void
-	 */
-	public static function record_failover( array $summary ): void {
-		set_transient( 'hydra_ai_last_failover', $summary, DAY_IN_SECONDS );
+	public static function connector_key_option( string $profile_id ): string {
+		return 'connectors_ai_' . str_replace( '-', '_', sanitize_key( $profile_id ) ) . '_api_key';
 	}
 
-	/**
-	 * 读取最近一次故障转移摘要。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array<string,mixed>|null
-	 */
-	public static function get_last_failover(): ?array {
-		$summary = get_transient( 'hydra_ai_last_failover' );
-
-		return is_array( $summary ) ? $summary : null;
+	public static function generate_id( string $prefix ): string {
+		return $prefix . '-' . wp_generate_uuid4();
 	}
+
+	private static function sanitize_profile_name( string $name ) {
+		$name = mb_substr( sanitize_text_field( trim( $name ) ), 0, 100 );
+		return '' !== $name ? $name : new WP_Error( 'hydra_ai_empty_profile_name', __( '请填写配置名称。', 'hydra-ai' ) );
+	}
+
+	public static function record_failover( array $summary, string $profile_id ): void { set_transient( 'hydra_ai_last_failover_' . $profile_id, $summary, DAY_IN_SECONDS ); }
+	public static function get_last_failover( string $profile_id ): ?array { $summary = get_transient( 'hydra_ai_last_failover_' . $profile_id );
+		return is_array( $summary ) ? $summary : null; }
 }

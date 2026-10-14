@@ -21,11 +21,17 @@ use WordPress\AiClient\Providers\Models\Enums\OptionEnum;
  * 模型元数据目录。
  *
  * Hydra 的“模型”直接来自用户配置的供应商条目：每个条目暴露其模型 ID，
- * 相同模型 ID 的重复条目以优先级最高的为准。
+ * 相同模型 ID 合并其配置协议的能力，接口名称采用优先级最高的条目。
  *
  * @since 1.0.0
  */
 class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
+
+	private $profile_id;
+
+	public function __construct( string $profile_id ) {
+		$this->profile_id = $profile_id;
+	}
 
 	/**
 	 * @inheritDoc
@@ -34,7 +40,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 		$models = array();
 		$grouped = array();
 
-		foreach ( Hydra_Settings::get_enabled_entries() as $entry ) {
+		foreach ( Hydra_Settings::get_enabled_entries( $this->profile_id ) as $entry ) {
 			$model_id = isset( $entry['model'] ) ? (string) $entry['model'] : '';
 
 			if ( '' === $model_id ) {
@@ -66,7 +72,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 	 * @inheritDoc
 	 */
 	public function hasModelMetadata( string $model_id ): bool {
-		foreach ( Hydra_Settings::get_enabled_entries() as $entry ) {
+		foreach ( Hydra_Settings::get_enabled_entries( $this->profile_id ) as $entry ) {
 			if ( isset( $entry['model'] ) && hash_equals( (string) $entry['model'], $model_id ) ) {
 				return true;
 			}
@@ -86,7 +92,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 		}
 
 		throw new InvalidArgumentException(
-			sprintf( '模型 "%s" 未在 Hydra AI 供应商条目中定义。', $model_id )
+			sprintf( __( '模型“%s”未在当前配置中定义。', 'hydra-ai' ), $model_id )
 		);
 	}
 
@@ -167,12 +173,15 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 			new SupportedOption( OptionEnum::outputModalities(), $output_combos ),
 		);
 
+		if ( in_array( 'chat', $protocols, true ) || in_array( 'responses', $protocols, true ) ) {
+			$options[] = new SupportedOption( OptionEnum::logprobs() );
+			$options[] = new SupportedOption( OptionEnum::topLogprobs() );
+		}
+
 		if ( in_array( 'chat', $protocols, true ) ) {
 			$options[] = new SupportedOption( OptionEnum::candidateCount() );
 			$options[] = new SupportedOption( OptionEnum::presencePenalty() );
 			$options[] = new SupportedOption( OptionEnum::frequencyPenalty() );
-			$options[] = new SupportedOption( OptionEnum::logprobs() );
-			$options[] = new SupportedOption( OptionEnum::topLogprobs() );
 		}
 
 		if ( in_array( 'chat', $protocols, true ) || in_array( 'anthropic', $protocols, true ) ) {
@@ -183,12 +192,14 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 			$options[] = new SupportedOption( OptionEnum::topK() );
 		}
 
-		if ( in_array( 'responses', $protocols, true ) || in_array( 'anthropic', $protocols, true ) ) {
+		if ( array_intersect( array( 'chat', 'responses', 'anthropic' ), $protocols ) ) {
 			$options[] = new SupportedOption( OptionEnum::webSearch() );
 		}
 
-		if ( in_array( 'responses', $protocols, true ) ) {
+		if ( in_array( 'responses', $protocols, true ) || in_array( 'chat', $protocols, true ) ) {
 			$options[] = new SupportedOption( OptionEnum::outputFileType(), array( FileTypeEnum::inline() ) );
+		}
+		if ( in_array( 'responses', $protocols, true ) ) {
 			$options[] = new SupportedOption( OptionEnum::outputMediaOrientation(), array( MediaOrientationEnum::square(), MediaOrientationEnum::landscape(), MediaOrientationEnum::portrait() ) );
 			$options[] = new SupportedOption( OptionEnum::outputMediaAspectRatio(), array( '1:1', '3:2', '2:3' ) );
 		}

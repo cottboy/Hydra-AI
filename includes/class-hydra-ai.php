@@ -58,6 +58,9 @@ final class Hydra_AI {
 		add_action( 'wp_ajax_hydra_ai_delete_entry', array( $this->admin, 'ajax_delete_entry' ) );
 		add_action( 'wp_ajax_hydra_ai_reorder', array( $this->admin, 'ajax_reorder' ) );
 		add_action( 'wp_ajax_hydra_ai_test_entry', array( $this->admin, 'ajax_test_entry' ) );
+		add_action( 'wp_ajax_hydra_ai_add_profile', array( $this->admin, 'ajax_add_profile' ) );
+		add_action( 'wp_ajax_hydra_ai_delete_profile', array( $this->admin, 'ajax_delete_profile' ) );
+		add_action( 'wp_ajax_hydra_ai_rename_profile', array( $this->admin, 'ajax_rename_profile' ) );
 
 		// 插件列表页增加“设置”快捷入口。
 		add_filter(

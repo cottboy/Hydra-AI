@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
 use WordPress\AiClient\Common\Exception\RuntimeException;
+use WordPress\AiClient\Common\Exception\TokenLimitReachedException;
 use WordPress\AiClient\Files\DTO\File;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
@@ -36,6 +37,8 @@ use WordPress\AiClient\Tools\DTO\WebSearch;
  */
 class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 
+	use Hydra_Tool_Names;
+
 	/**
 	 * @inheritDoc
 	 */
@@ -60,8 +63,6 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			|| null !== $config->getStopSequences()
 			|| null !== $config->getPresencePenalty()
 			|| null !== $config->getFrequencyPenalty()
-			|| null !== $config->getLogprobs()
-			|| null !== $config->getTopLogprobs()
 			|| null !== $config->getOutputSpeechVoice()
 		) {
 			throw new RuntimeException( __( 'Responses 协议不支持本次请求中的配置选项。', 'hydra-ai' ) );
@@ -126,10 +127,30 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		foreach ( $config->getCustomOptions() as $key => $value ) {
 			if ( array_key_exists( $key, $params ) ) {
 				throw new InvalidArgumentException(
-					sprintf( '自定义选项 "%s" 与已有参数冲突。', $key )
+					sprintf( __( '自定义选项“%s”与已有参数冲突。', 'hydra-ai' ), $key )
 				);
 			}
 			$params[ $key ] = $value;
+		}
+
+		if ( null !== $config->getLogprobs() ) {
+			$include = isset( $params['include'] ) && is_array( $params['include'] ) ? $params['include'] : array();
+			if ( $config->getLogprobs() ) {
+				$include[] = 'message.output_text.logprobs';
+			}
+			$params['include'] = array_values( array_unique( $include ) );
+		}
+		if ( null !== $config->getTopLogprobs() ) {
+			if ( isset( $params['top_logprobs'] ) ) {
+				throw new InvalidArgumentException( __( '自定义选项与已有参数冲突。', 'hydra-ai' ) );
+			}
+			$params['top_logprobs'] = $config->getTopLogprobs();
+		}
+
+		if ( isset( $params['tool_choice']['function']['name'] ) && is_string( $params['tool_choice']['function']['name'] ) ) {
+			$params['tool_choice']['function']['name'] = $this->protocol_tool_name( $params['tool_choice']['function']['name'] );
+		} elseif ( isset( $params['tool_choice']['name'] ) && is_string( $params['tool_choice']['name'] ) ) {
+			$params['tool_choice']['name'] = $this->protocol_tool_name( $params['tool_choice']['name'] );
 		}
 
 		return $params;
@@ -230,9 +251,29 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		$is_model  = $message->getRole()->isModel();
 		$content   = array();
 		$top_items = array();
+		$thought_items = array();
 
 		foreach ( $parts as $part ) {
 			$type = $part->getType();
+
+			if ( $type->isText() && $part->getChannel()->isThought() ) {
+				$signature = $part->getThoughtSignature();
+				if ( is_string( $signature ) && '' !== $signature ) {
+					$decoded = json_decode( $signature, true );
+					if ( is_array( $decoded ) && ! empty( $decoded['id'] ) ) {
+						$reasoning = array(
+							'type' => 'reasoning',
+							'id' => (string) $decoded['id'],
+							'summary' => is_array( $decoded['summary'] ?? null ) ? $decoded['summary'] : array()
+						);
+						if ( isset( $decoded['encrypted_content'] ) && is_string( $decoded['encrypted_content'] ) ) {
+							$reasoning['encrypted_content'] = $decoded['encrypted_content'];
+						}
+						$thought_items[] = $reasoning;
+					}
+				}
+				continue;
+			}
 
 			if ( $type->isText() ) {
 				$text = (string) $part->getText();
@@ -260,7 +301,7 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 				$top_items[] = array(
 					'type'      => 'function_call',
 					'call_id'   => (string) $call->getId(),
-					'name'      => (string) $call->getName(),
+					'name'      => $this->protocol_tool_name( (string) $call->getName() ),
 					'arguments' => (string) wp_json_encode( $call->getArgs() ?? new stdClass() ),
 				);
 				continue;
@@ -288,14 +329,14 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			);
 		}
 
-		return $top_items;
+		return array_merge( $thought_items, $top_items );
 	}
 
 	/**
 	 * 把文件部件转换为 Responses API 的输入内容项。
 	 *
-	 * 支持图片（远程 URL 或 data URI）、音频（WAV/MP3，远端自动下载内联）
-	 * 与文件输入（远端传 file_url，内联传 file_data）；其余类型抛出异常，
+	 * 支持图片（远程 URL 或 data URI），以及文档、文本和音频文件输入
+	 * （远端传 file_url，内联传 file_data）；其余类型抛出异常，
 	 * 由故障转移切换到支持的供应商条目。
 	 *
 	 * @since 1.0.1
@@ -323,16 +364,7 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			);
 		}
 
-		if ( $file->isAudio() ) {
-			// 音频：Responses 协议仅接受内联 base64，远端文件自动下载。
-			return array(
-				'type'   => 'input_audio',
-				'data'   => Hydra_Files::to_base64( $file ),
-				'format' => Hydra_Files::openai_audio_format( $file ),
-			);
-		}
-
-		if ( $file->isDocument() || $file->isText() ) {
+		if ( $file->isDocument() || $file->isText() || $file->isAudio() ) {
 			// 文件：远端传 URL，内联传带 MIME 的 data URI。
 			if ( $file->isRemote() ) {
 				return array(
@@ -372,9 +404,10 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		foreach ( $declarations as $declaration ) {
 			$tools[] = array(
 				'type'        => 'function',
-				'name'        => (string) $declaration->getName(),
+				'name'        => $this->protocol_tool_name( (string) $declaration->getName() ),
 				'description' => (string) $declaration->getDescription(),
-				'parameters'  => $declaration->getParameters() ?? array(
+				'strict'      => false,
+				'parameters'  => $declaration->getParameters() ?: array(
 					'type'       => 'object',
 					'properties' => new stdClass(),
 				),
@@ -408,6 +441,9 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 		foreach ( Hydra_Stream::decode( $body ) as $event ) {
 			$data = $event['data'];
 			$type = isset( $data['type'] ) && is_string( $data['type'] ) ? $data['type'] : $event['event'];
+			if ( 'error' === $type ) {
+				return $this->parse_response( array( 'error' => $data ), $provider_metadata, $model_metadata );
+			}
 			if ( in_array( $type, array( 'response.completed', 'response.incomplete', 'response.failed' ), true ) && isset( $data['response'] ) && is_array( $data['response'] ) ) {
 				$final_response = $data['response'];
 			}
@@ -437,6 +473,10 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 				'error',
 				'' !== $message ? $message : __( '服务端返回了未知错误。', 'hydra-ai' )
 			);
+		}
+
+		if ( 'incomplete' === ( $data['status'] ?? '' ) && 'max_output_tokens' === ( $data['incomplete_details']['reason'] ?? '' ) ) {
+			throw new TokenLimitReachedException( __( '生成内容已达到输出长度限制。', 'hydra-ai' ), is_int( $data['max_output_tokens'] ?? null ) ? $data['max_output_tokens'] : null );
 		}
 
 		if ( empty( $data['output'] ) || ! is_array( $data['output'] ) ) {
@@ -513,11 +553,23 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 				continue;
 			}
 
-			if ( 'reasoning' === $item_type && ! empty( $output_item['summary'] ) && is_array( $output_item['summary'] ) ) {
-				foreach ( $output_item['summary'] as $summary ) {
+			if ( 'reasoning' === $item_type ) {
+				$summary_texts = array();
+				foreach ( is_array( $output_item['summary'] ?? null ) ? $output_item['summary'] : array() as $summary ) {
 					if ( is_array( $summary ) && isset( $summary['text'] ) && is_string( $summary['text'] ) && '' !== $summary['text'] ) {
-						$parts[] = new MessagePart( $summary['text'], MessagePartChannelEnum::thought() );
+						$summary_texts[] = $summary['text'];
 					}
+				}
+				$signature_data = array(
+					'id' => (string) ( $output_item['id'] ?? '' ),
+					'summary' => is_array( $output_item['summary'] ?? null ) ? $output_item['summary'] : array()
+				);
+				if ( isset( $output_item['encrypted_content'] ) && is_string( $output_item['encrypted_content'] ) ) {
+					$signature_data['encrypted_content'] = $output_item['encrypted_content'];
+				}
+				$signature = wp_json_encode( $signature_data );
+				if ( is_string( $signature ) && ! empty( $signature_data['id'] ) ) {
+					$parts[] = new MessagePart( implode( "\n", $summary_texts ), MessagePartChannelEnum::thought(), $signature );
 				}
 				$metadata = $output_item;
 				unset( $metadata['summary'] );
@@ -530,17 +582,16 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			// function_call 输出项：转换为函数调用部件。
 			if ( 'function_call' === $item_type ) {
 				$args = null;
-				if ( isset( $output_item['arguments'] ) && is_string( $output_item['arguments'] ) ) {
-					$decoded = json_decode( $output_item['arguments'], true );
-					if ( is_array( $decoded ) && $decoded ) {
-						$args = $decoded;
-					}
+				if ( ! isset( $output_item['arguments'] ) || ! is_string( $output_item['arguments'] ) || ! is_object( json_decode( $output_item['arguments'] ) ) ) {
+					throw new RuntimeException( __( '工具调用参数必须是有效的 JSON 对象。', 'hydra-ai' ) );
 				}
+				$decoded = json_decode( $output_item['arguments'], true );
+				$args = $decoded ?: null;
 
 				$parts[] = new MessagePart(
 					new FunctionCall(
 						isset( $output_item['call_id'] ) && is_string( $output_item['call_id'] ) ? $output_item['call_id'] : '',
-						isset( $output_item['name'] ) && is_string( $output_item['name'] ) ? $output_item['name'] : '',
+						isset( $output_item['name'] ) && is_string( $output_item['name'] ) ? $this->original_tool_name( $output_item['name'] ) : '',
 						$args
 					)
 				);
@@ -610,6 +661,20 @@ class Hydra_Protocol_Responses implements Hydra_Protocol_Interface {
 			$additional['reasoning'] = $reasoning_metadata;
 		}
 
+		$text = '';
+		$text_index = null;
+		foreach ( $parts as $index => $part ) {
+			if ( $part->getType()->isText() && $part->getChannel()->isContent() ) {
+				$text_index = $text_index ?? $index;
+				$text .= (string) $part->getText();
+				unset( $parts[ $index ] );
+			}
+		}
+		if ( null !== $text_index ) {
+			$parts[ $text_index ] = new MessagePart( $text );
+			ksort( $parts );
+			$parts = array_values( $parts );
+		}
 		$candidates = array();
 		if ( $parts ) {
 			$candidates[] = new Candidate( new Message( MessageRoleEnum::model(), $parts ), $finish_reason );

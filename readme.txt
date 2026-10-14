@@ -4,53 +4,82 @@ Tags: ai, openai, anthropic, connector, failover
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 2.0.0
 License: GPL-2.0-or-later
 License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
 
-在 WordPress 连接中注册一个自定义 AI 供应商，支持三种协议与多供应商故障转移。
+在 WordPress 连接中注册多个自定义 AI 供应商，适配三种通用协议，并支持多接口故障转移。
 
 == Description ==
 
-WordPress 7.0 内置的 AI 供应商集成只支持 OpenAI、Gemini、Anthropic 三家。Hydra AI 在 WordPress 连接（Connectors）中注册一个 "Hydra AI" 供应商，并允许你自定义任意端点：
+WordPress 7 的 AI Client 通过供应商协议连接外部 AI 服务。Hydra AI 只实现协议层，不把请求地址锁定到某一家厂商：
 
-* 三种协议：Chat Completions（OpenAI 兼容）、Responses API（OpenAI 官方）、Anthropic Messages。
-* 在“设置 → Hydra AI”中以列表方式管理供应商，右上角“添加供应商”即可新增条目。
-* 拖动调整优先级：请求从上到下依次尝试，任一环节失败自动切换到下一个供应商。
-* 每个条目的模型会暴露给 WordPress AI 客户端（AiClient），其他插件可直接使用。
-* 支持连通性测试、启用/禁用开关、密钥回退（条目密钥 > 连接器密钥 > 常量 HYDRA_AI_API_KEY）。
-* 文件输入按各协议原生能力全量支持：图片（JPEG/PNG/GIF/WebP）、PDF 文档、纯文本文档与音频（WAV/MP3）；远端文件在不支持 URL 的协议下自动下载内联（上限 25MB），不支持的类型自动故障转移。
-* 多模态输出：Responses 协议可通过图片生成工具返回图片，Chat Completions 可返回音频，也兼容解析服务端提供的图片与音频内容块。
-* 完整转换多候选、工具调用与结果、结构化输出、推理内容与签名、拒答、停止原因、Token 用量及服务端扩展元数据；支持聚合三协议的 SSE 流式响应。
+* Chat Completions：`/chat/completions`
+* Responses：`/responses`
+* Anthropic Messages：`/messages`
+
+在“设置 → Hydra AI”右上方可以管理多个命名配置。安装后自动有“Hydra AI”配置；输入名称并点击“新增”即可创建新的独立配置。每个配置都会在 WordPress“连接”中注册为同名 AI 供应商，删除或重命名时同步更新连接。
+
+每个配置可以添加多个接口，按列表顺序尝试，失败后自动切换到下一个接口。每个接口可单独设置协议、端点、模型和 API Key；未填写接口密钥时使用对应配置的 WordPress 连接密钥。
+
+协议层支持 WordPress AI Client 能表达的文本、多模态输入、工具调用、结构化输出、推理内容、拒答、停止原因、Token 用量、服务端扩展数据与 SSE 流式响应。协议不包含任何厂商专属的模型发现、嵌入、图片模型或语音模型接口。
+
+文件输入按协议能力处理图片、PDF、纯文本文档和音频；不支持的文件类型会让当前接口失败并触发下一个接口。
+
+== 参考与许可 ==
+
+本插件的协议适配实现参考并改写了以下 WordPress 官方插件公开的 GPL-2.0-or-later 实现：
+
+* AI Provider for OpenAI：https://wordpress.org/plugins/ai-provider-for-openai/
+* AI Provider for Anthropic：https://wordpress.org/plugins/ai-provider-for-anthropic/
+* AI Provider for Google：https://wordpress.org/plugins/ai-provider-for-google/ 。其 Gemini 专有协议不属于本插件的三种协议范围。
+
+实现依据：
+
+* WordPress AI Client：https://github.com/WordPress/php-ai-client
+* WordPress 连接注册规则：WordPress 7 的 wp_connectors_init 与 AI Client 自动发现机制。
+* Chat Completions：https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
+* Responses：https://developers.openai.com/api/reference/resources/responses/methods/create
+* Anthropic Messages：https://platform.claude.com/docs/en/api/messages/create
+
+== 协议能力与边界 ==
+
+* 三种协议都支持对话记录、图片与文档输入、函数调用与结果回传、结构化输出、用量统计和扩展请求字段。
+* Chat Completions 还支持多候选、音频输入与输出、输出概率和标准网页搜索参数。
+* Responses 还支持加密推理内容往返、推理用量、输出概率、网页搜索和协议内的图片生成工具。
+* Messages 还支持带签名的思考、隐藏思考与服务端工具状态保留、缓存用量、搜索域名筛选，以及 pause_turn 自动续接（最多续接 5 次）。纯文本文档按 text 来源发送，PDF 按 URL 或 base64 来源发送。
+* SSE 响应在 WordPress 收完请求后合并为完整结果；不会逐字推送到页面。
+* 调用方可使用 WordPress AI Client 的 customOptions 传入三种协议的其他请求字段，例如推理强度、工具选择、缓存控制和会话标识。插件不按厂商名称或模型名称猜测功能、添加私有规则。
+* 具体模型是否能处理图片、音频、工具等能力，取决于用户配置的服务。协议有对应字段，不代表所有模型都支持；接口拒绝或返回错误时按配置顺序切换。
+* 接口地址只接受 HTTP 或 HTTPS，不接受嵌入账号、查询参数或片段。仅管理员保存的接口地址允许访问内网，普通文件下载使用 WordPress 的安全限制，文件大小上限为 25MB。
 
 == Installation ==
 
 1. 将插件上传到 `wp-content/plugins/hydra-ai` 并启用。
-2. 前往“设置 → Hydra AI”，点击“添加供应商”配置端点、密钥与模型。
-3. （可选）在“设置 → 连接”中为 Hydra AI 连接器保存一个默认 API Key。
+2. 前往“设置 → Hydra AI”，选择“Hydra AI”配置并点击“添加接口”。
+3. 填写协议、端点、模型和密钥并保存。
+4. （可选）在“设置 → 连接”中为对应配置保存 API Key。
 
 == i18n ==
 
-插件源语言为简体中文，界面文字直接以中文写在代码中；其他语言由 `languages/` 下的翻译文件提供：
+插件源语言为简体中文，界面文字通过 `languages/` 下的翻译文件提供：
 
-* `hydra-ai.pot`：翻译模板，新增语言时以它为底稿。
-* `hydra-ai-en_US.po/.mo`：英文翻译，站点语言为 English (United States) 时自动生效。
-* 新增其他语言：复制 en_US 的条目、填入译文并编译为 .mo（或用 Loco Translate 等插件操作），命名格式为 `hydra-ai-{语言代码}.po/.mo`。
+* `hydra-ai.pot`：翻译模板。
+* `hydra-ai-en_US.po/.mo`：英文翻译。
 
 == Changelog ==
 
+= 2.0.0 =
+* 支持多个命名配置，并在 WordPress 连接中分别注册、删除和重命名供应商。
+* 将配置、接口和连接密钥按配置隔离。
+* 补齐 Responses 加密推理内容往返、输出概率和长度限制识别。
+* 补齐 Messages 自动续接、完整文本合并、思考签名、隐藏状态与思考用量。
+* 修复带命名空间的 WordPress 工具名称、无格式音频返回、非法地址与重复排序校验。
+* 修复翻译文件生成并补齐配置管理界面的中英文文字。
+* 更新三种协议的公开协议能力说明和官方插件参考声明。
+
 = 1.1.0 =
-* 接入 WordPress AI Client 的图片生成、语音生成与文本转语音能力，并按模型实际配置的协议动态声明能力。
-* 补齐 Responses 图片生成、Chat 音频输出、多候选与多模态响应，以及 Messages 推理签名和未映射扩展数据保留。
-* 支持聚合 Chat Completions、Responses 与 Messages 的 SSE 流式响应。
-* 完善三协议参数映射与独立协议回归测试。
-
-= 1.0.2 =
-* 精简设置页：移除页面底部使用说明、供应商列的端点与密钥状态小字，以及弹窗中名称/端点/模型的占位提示文字。
-* 简化添加供应商弹窗的协议选项文字。
-
-= 1.0.1 =
-* 补齐三协议文件输入：音频（WAV/MP3）、PDF 与纯文本文档；远端文件在不支持 URL 的协议下自动下载内联。
+* 接入 WordPress AI Client 的多模态、工具调用、结构化输出和流式响应能力。
 
 = 1.0.0 =
 * 首个版本：连接器注册、三协议端点管理、拖拽排序与故障转移。

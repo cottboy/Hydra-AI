@@ -1,7 +1,35 @@
 /* Hydra AI 设置页样式 */
 
-.hydra-ai-wrap .hydra-entries-table {
+.hydra-table-scroll {
 	margin-top: 1em;
+	overflow-x: auto;
+}
+
+.hydra-ai-wrap .hydra-entries-table {
+	min-width: 900px;
+}
+
+.hydra-entries-table th,
+.hydra-entries-table td {
+	white-space: nowrap;
+}
+
+.hydra-page-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.hydra-profile-controls {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.hydra-profile-controls input {
+	width: 150px;
 }
 
 /* 优先级列与拖拽手柄 */
@@ -208,4 +236,21 @@
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 20px;
+}
+
+/* 窄屏时配置控件换行，保持所有操作可见。 */
+.hydra-page-title,
+.hydra-profile-controls {
+	flex-wrap: wrap;
+}
+.hydra-profile-controls select {
+	max-width: 240px;
+}
+#hydra-dialog-notice {
+	color: #b32d2e;
+}
+@media (max-width: 782px) {
+	.hydra-profile-controls {
+		width: 100%;
+	}
 }

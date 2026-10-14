@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WordPress\AiClient\AiClient;
 use WordPress\AiClient\Common\Exception\RuntimeException;
+use WordPress\AiClient\Common\Exception\TokenLimitReachedException;
 use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessageRoleEnum;
@@ -38,6 +39,9 @@ use WordPress\AiClient\Results\DTO\GenerativeAiResult;
  * @since 1.0.0
  */
 class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationModelInterface, ImageGenerationModelInterface, SpeechGenerationModelInterface, TextToSpeechConversionModelInterface {
+
+	/** Anthropic 服务端工具暂停后最多自动续接次数。 */
+	private const MAX_ANTHROPIC_CONTINUATIONS = 5;
 
 	/**
 	 * @inheritDoc
@@ -79,7 +83,8 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	 * @return GenerativeAiResult
 	 */
 	private function generate_result( array $prompt ): GenerativeAiResult {
-		$entries = Hydra_Settings::get_enabled_entries();
+		$profile_id = $this->providerMetadata()->getId();
+		$entries = Hydra_Settings::get_enabled_entries( $profile_id );
 
 		if ( ! $entries ) {
 			throw new RuntimeException(
@@ -94,7 +99,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 		foreach ( $ordered as $entry ) {
 			try {
-				$result = $this->generate_for_entry( $entry, $prompt );
+				$result = $this->generate_for_entry( $entry, $prompt, $profile_id );
 
 				// 记录真实的故障转移事件：曾经失败、最终成功。
 				if ( $attempts ) {
@@ -152,10 +157,11 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	 * @return GenerativeAiResult
 	 * @throws Throwable 请求失败或响应无效时抛出。
 	 */
-	private function generate_for_entry( array $entry, array $prompt ): GenerativeAiResult {
+	private function generate_for_entry( array $entry, array $prompt, ?string $profile_id = null ): GenerativeAiResult {
 		$protocol = Hydra_Protocols::get( (string) $entry['protocol'] );
 
-		$api_key = Hydra_Settings::resolve_api_key( $entry );
+		$profile_id = $profile_id ?: $this->providerMetadata()->getId();
+		$api_key = Hydra_Settings::resolve_api_key( $entry, $profile_id );
 		if ( '' === $api_key ) {
 			// 回退：检查注册表中是否为 Hydra AI 注入过密钥。
 			$api_key = $this->resolve_registry_api_key();
@@ -178,64 +184,97 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 		$params  = $protocol->build_params( $prompt, $this->getConfig(), (string) $entry['model'] );
 		$headers = $protocol->build_headers( $this->getConfig() );
 
-		$request = new Request(
-			HttpMethodEnum::POST(),
-			$url,
-			$headers,
-			$params,
-			$this->getRequestOptions()
-		);
-
-		$request = $protocol->apply_authentication( $request, $api_key );
-
-		/*
-		 * WordPress 的安全请求默认拒绝回环与内网地址，且仅放行 80/443/8080
-		 * 端口，而这正是自定义端点的常见场景（如 Ollama:11434、内网中转网关）。
-		 * 端点在保存时已做协议与格式校验，这里仅在单次发送期间放开：内网地址
-		 * 全部放行，端口仅放行当前条目使用的端口，并使用独立闭包确保卸载的
-		 * 是本插件添加的过滤器。
-		 */
-		$allow_external = static function () {
-			return true;
-		};
-		add_filter( 'http_request_host_is_external', $allow_external );
-
-		$entry_port = (int) wp_parse_url( $url, PHP_URL_PORT );
-		$allow_port = null;
-		if ( $entry_port > 0 ) {
-			$allow_port = static function ( $ports ) use ( $entry_port ) {
-				$ports = is_array( $ports ) ? $ports : array();
-				$ports[] = $entry_port;
-
-				return $ports;
-			};
-			add_filter( 'http_allowed_safe_ports', $allow_port );
+		if ( $protocol instanceof Hydra_Protocol_Anthropic ) {
+			return $this->generate_anthropic_result( $protocol, $url, $params, $headers, $api_key );
 		}
 
+		$response = $this->send_protocol_request( $protocol, $url, $params, $headers, $api_key );
+		$data     = $response->getData();
+		if ( is_array( $data ) ) {
+			return $protocol->parse_response( $data, $this->providerMetadata(), $this->metadata() );
+		}
+		return $protocol->parse_stream_response( (string) $response->getBody(), $this->providerMetadata(), $this->metadata() );
+	}
+
+	/**
+	 * 原样续接服务端暂停的 Messages 回答，合并内容与所有请求的用量。
+	 *
+	 * 先完成原始内容的续接，再转换结果，确保服务端工具和容器状态不会丢失。
+	 */
+	private function generate_anthropic_result( Hydra_Protocol_Anthropic $protocol, string $url, array $params, array $headers, string $api_key ): GenerativeAiResult {
+		$content = array();
+		$usage   = array();
+		$thought = null;
+
+		for ( $index = 0; $index <= self::MAX_ANTHROPIC_CONTINUATIONS; $index++ ) {
+			$response = $this->send_protocol_request( $protocol, $url, $params, $headers, $api_key );
+			$data     = $response->getData();
+			if ( ! is_array( $data ) ) {
+				$data = $protocol->decode_stream_response( (string) $response->getBody() );
+			}
+			if ( isset( $data['error'] ) ) {
+				return $protocol->parse_response( $data, $this->providerMetadata(), $this->metadata() );
+			}
+			if ( ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) {
+				throw ResponseException::fromMissingData( $this->providerMetadata()->getName(), 'content' );
+			}
+			$content = array_merge( $content, $data['content'] );
+			$leg_usage = isset( $data['usage'] ) && is_array( $data['usage'] ) ? $data['usage'] : array();
+			foreach ( array( 'input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens' ) as $key ) {
+				$usage[ $key ] = ( $usage[ $key ] ?? 0 ) + ( is_int( $leg_usage[ $key ] ?? null ) ? $leg_usage[ $key ] : 0 );
+			}
+			if ( isset( $leg_usage['output_tokens_details']['thinking_tokens'] ) && is_int( $leg_usage['output_tokens_details']['thinking_tokens'] ) ) {
+				$thought = ( $thought ?? 0 ) + $leg_usage['output_tokens_details']['thinking_tokens'];
+			}
+			if ( 'pause_turn' !== ( $data['stop_reason'] ?? '' ) || $index === self::MAX_ANTHROPIC_CONTINUATIONS ) {
+				break;
+			}
+			$params['messages'][] = array(
+				'role' => 'assistant',
+				'content' => $data['content']
+			);
+			if ( isset( $data['container']['id'] ) && is_string( $data['container']['id'] ) ) {
+				$params['container'] = $data['container']['id'];
+			}
+		}
+		$data['content'] = $content;
+		// 保留最后一段的扩展用量字段，并覆盖需要累加的字段。
+		$data['usage'] = array_merge( $leg_usage, $usage );
+		if ( null !== $thought ) {
+			$data['usage']['output_tokens_details']['thinking_tokens'] = $thought;
+		}
+		return $protocol->parse_response( $data, $this->providerMetadata(), $this->metadata() );
+	}
+
+	/** 发送协议请求，只为管理员明确配置的地址允许内网访问。 */
+	private function send_protocol_request( Hydra_Protocol_Interface $protocol, string $url, array $params, array $headers, string $api_key ): Response {
+		$options = $this->getRequestOptions() ? clone $this->getRequestOptions() : new RequestOptions();
+		// 禁止携带密钥跳转到其他地址。
+		$options->setMaxRedirects( 0 );
+		$request = new Request( HttpMethodEnum::POST(), $url, $headers, $params, $options );
+		$request = $protocol->apply_authentication( $request, $api_key );
+
+		$entry_host = (string) wp_parse_url( $url, PHP_URL_HOST );
+		$allow_external = static function ( $allowed, $host ) use ( $entry_host ) {
+			return 0 === strcasecmp( (string) $host, $entry_host ) ? true : $allowed;
+		};
+		add_filter( 'http_request_host_is_external', $allow_external, 10, 2 );
+		$entry_port = (int) wp_parse_url( $url, PHP_URL_PORT );
+		$allow_port = static function ( $ports ) use ( $entry_port ) {
+			if ( $entry_port > 0 ) {
+				$ports[] = $entry_port;
+			}
+			return $ports;
+		};
+		add_filter( 'http_allowed_safe_ports', $allow_port );
 		try {
 			$response = $this->getHttpTransporter()->send( $request );
 		} finally {
 			remove_filter( 'http_request_host_is_external', $allow_external );
-			if ( null !== $allow_port ) {
-				remove_filter( 'http_allowed_safe_ports', $allow_port );
-			}
+			remove_filter( 'http_allowed_safe_ports', $allow_port );
 		}
-
 		ResponseUtil::throwIfNotSuccessful( $response );
-
-		$data = $response->getData();
-		if ( ! is_array( $data ) ) {
-			$body = $response->getBody();
-			if ( is_string( $body ) && false !== strpos( $body, 'data:' ) ) {
-				return $protocol->parse_stream_response( $body, $this->providerMetadata(), $this->metadata() );
-			}
-			throw ResponseException::fromMissingData(
-				$this->providerMetadata()->getName(),
-				'body'
-			);
-		}
-
-		return $protocol->parse_response( $data, $this->providerMetadata(), $this->metadata() );
+		return $response;
 	}
 
 	/**
@@ -294,7 +333,8 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 				'time'     => time(),
 				'success'  => $success,
 				'attempts' => $attempts,
-			)
+			),
+			$this->providerMetadata()->getId()
 		);
 	}
 
@@ -308,8 +348,9 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	 * @param array<string,mixed> $entry 供应商条目。
 	 * @return array{ok:bool,message:string}
 	 */
-	public static function test_entry( array $entry ): array {
+	public static function test_entry( array $entry, string $profile_id ): array {
 		try {
+			$provider_class = Hydra_Provider::class_for_profile( $profile_id );
 			$model = new self(
 				new ModelMetadata(
 					(string) $entry['model'],
@@ -317,7 +358,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 					array(),
 					array()
 				),
-				Hydra_Provider::metadata()
+				$provider_class::metadata()
 			);
 
 			// 绑定默认注册表的传输器与鉴权，保证与真实请求路径一致。
@@ -332,12 +373,19 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 			$model->generate_for_entry(
 				$entry,
-				array( new Message( MessageRoleEnum::user(), array( new MessagePart( 'Hi' ) ) ) )
+				array( new Message( MessageRoleEnum::user(), array( new MessagePart( 'Hi' ) ) ) ),
+				$profile_id
 			);
 
 			return array(
 				'ok'      => true,
 				'message' => __( '连接成功。', 'hydra-ai' ),
+			);
+		} catch ( TokenLimitReachedException $e ) {
+			// 测试仅请求很少的输出额度，额度用尽仍说明接口和密钥有效。
+			return array(
+				'ok' => true,
+				'message' => __( '连接成功。', 'hydra-ai' )
 			);
 		} catch ( Throwable $e ) {
 			return array(
