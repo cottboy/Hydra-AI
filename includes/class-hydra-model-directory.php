@@ -40,7 +40,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 		$models = array();
 		$grouped = array();
 
-		foreach ( Hydra_Settings::get_enabled_entries( $this->profile_id ) as $entry ) {
+		foreach ( Hydra_Settings::get_configured_entries( $this->profile_id ) as $entry ) {
 			$model_id = isset( $entry['model'] ) ? (string) $entry['model'] : '';
 
 			if ( '' === $model_id ) {
@@ -72,7 +72,7 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 	 * @inheritDoc
 	 */
 	public function hasModelMetadata( string $model_id ): bool {
-		foreach ( Hydra_Settings::get_enabled_entries( $this->profile_id ) as $entry ) {
+		foreach ( Hydra_Settings::get_configured_entries( $this->profile_id ) as $entry ) {
 			if ( isset( $entry['model'] ) && hash_equals( (string) $entry['model'], $model_id ) ) {
 				return true;
 			}

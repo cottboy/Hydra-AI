@@ -9,6 +9,7 @@ use WordPress\AiClient\Providers\Contracts\ModelMetadataDirectoryInterface;
 use WordPress\AiClient\Providers\Contracts\ProviderAvailabilityInterface;
 use WordPress\AiClient\Providers\DTO\ProviderMetadata;
 use WordPress\AiClient\Providers\Enums\ProviderTypeEnum;
+use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
 use WordPress\AiClient\Providers\Http\Enums\RequestAuthenticationMethod;
 use WordPress\AiClient\Providers\Models\Contracts\ModelInterface;
 use WordPress\AiClient\Providers\Models\DTO\ModelMetadata;
@@ -70,6 +71,14 @@ class Hydra_Provider extends AbstractApiProvider {
 			$class = self::class_for_profile( $profile_id );
 			if ( ! $registry->hasProvider( $profile_id ) ) {
 				$registry->registerProvider( $class );
+			}
+			$entries = Hydra_Settings::get_configured_entries( $profile_id );
+			if ( $entries ) {
+				// 将真实密钥交给注册表供其他插件识别；实际请求仍按各接口分别认证。
+				$registry->setProviderRequestAuthentication(
+					$profile_id,
+					new ApiKeyRequestAuthentication( (string) $entries[0]['api_key'] )
+				);
 			}
 		}
 	}

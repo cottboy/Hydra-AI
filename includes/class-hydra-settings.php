@@ -117,6 +117,18 @@ class Hydra_Settings {
 		return null;
 	}
 
+	/** 仅将已启用且填写密钥的接口用于供应商发现和实际调用。 */
+	public static function get_configured_entries( string $profile_id ): array {
+		return array_values(
+			array_filter(
+				self::get_enabled_entries( $profile_id ),
+				static function ( array $entry ): bool {
+					return '' !== trim( (string) $entry['api_key'] );
+				}
+			)
+		);
+	}
+
 	public static function create_profile( string $name ) {
 		$name = self::sanitize_profile_name( $name );
 		if ( is_wp_error( $name ) ) { return $name; }

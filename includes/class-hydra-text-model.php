@@ -83,7 +83,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	 */
 	private function generate_result( array $prompt ): GenerativeAiResult {
 		$profile_id = $this->providerMetadata()->getId();
-		$entries = Hydra_Settings::get_enabled_entries( $profile_id );
+		$entries = Hydra_Settings::get_configured_entries( $profile_id );
 
 		if ( ! $entries ) {
 			throw new RuntimeException(
