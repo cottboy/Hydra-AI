@@ -66,7 +66,7 @@ class Hydra_Admin {
 						<?php endforeach; ?>
 					</select>
 					<label class="screen-reader-text" for="hydra-profile-name"><?php esc_html_e( '配置名称', 'hydra-ai' ); ?></label>
-					<input type="text" id="hydra-profile-name" value="<?php echo esc_attr( $profile['name'] ?? '' ); ?>" placeholder="<?php esc_attr_e( '配置名称', 'hydra-ai' ); ?>" maxlength="100" />
+					<input type="text" id="hydra-profile-name" placeholder="<?php esc_attr_e( '配置名称', 'hydra-ai' ); ?>" maxlength="100" />
 					<button type="button" class="button" id="hydra-profile-add"><?php esc_html_e( '新增', 'hydra-ai' ); ?></button>
 					<button type="button" class="button" id="hydra-profile-delete" <?php disabled( ! $profile ); ?>><?php esc_html_e( '删除', 'hydra-ai' ); ?></button>
 					<button type="button" class="button" id="hydra-profile-rename" <?php disabled( ! $profile ); ?>><?php esc_html_e( '重命名', 'hydra-ai' ); ?></button>
