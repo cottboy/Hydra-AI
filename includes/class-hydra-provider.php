@@ -74,10 +74,10 @@ class Hydra_Provider extends AbstractApiProvider {
 			}
 			$entries = Hydra_Settings::get_configured_entries( $profile_id );
 			if ( $entries ) {
-				// 将真实密钥交给注册表供其他插件识别；实际请求仍按各接口分别认证。
+				// 仅提供占位密钥供其他插件识别空壳供应商，真实密钥只在插件内部用于请求。
 				$registry->setProviderRequestAuthentication(
 					$profile_id,
-					new ApiKeyRequestAuthentication( (string) $entries[0]['api_key'] )
+					new ApiKeyRequestAuthentication( '1' )
 				);
 			}
 		}
