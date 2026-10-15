@@ -249,13 +249,13 @@ msgstr "Delete \"%s\"? This cannot be undone."
 msgid "确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。"
 msgstr "Delete configuration \"%s\"? Its WordPress connector will also be removed."
 
+#: includes/class-hydra-admin.php:115
+msgid "端点地址"
+msgstr "Endpoint URL"
+
 #: includes/class-hydra-text-model.php:172
 msgid "端点地址无效。"
 msgstr "Invalid endpoint URL."
-
-#: includes/class-hydra-admin.php:115
-msgid "端点基础地址"
-msgstr "Endpoint base URL"
 
 #: includes/class-hydra-admin.php:102
 msgid "编辑"
@@ -305,13 +305,17 @@ msgstr "Audio input for this protocol only supports WAV or MP3."
 msgid "请在右上方输入名称并点击“新增”创建配置。"
 msgstr "Enter a name in the top right and click “Add” to create a configuration."
 
+#: includes/class-hydra-admin.php:115
+msgid "请填写完整的请求地址，插件不会自动追加任何路径。"
+msgstr "Enter the full request URL. The plugin never appends any path to it."
+
 #: includes/class-hydra-settings.php:193
 msgid "请填写接口名称和模型名称。"
 msgstr "Please enter an endpoint name and model name."
 
-#: includes/class-hydra-settings.php:222
-msgid "请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。"
-msgstr "Enter a valid HTTP or HTTPS base URL without credentials, query parameters, or fragments."
+#: includes/class-hydra-settings.php:219
+msgid "请填写有效的 HTTP 或 HTTPS 地址，不要包含账号、查询参数或片段。"
+msgstr "Enter a valid HTTP or HTTPS URL without credentials, query parameters, or fragments."
 
 #: includes/class-hydra-settings.php:237
 msgid "请填写配置名称。"

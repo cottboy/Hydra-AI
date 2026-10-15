@@ -211,14 +211,14 @@ class Hydra_Settings {
 		return is_wp_error( $clean ) ? array() : $clean;
 	}
 
-	/** 校验接口地址。错误地址必须报错，避免把密钥发往其他地址。 */
+	/** 校验接口地址。必须原样保存，既不补全也不改写，避免把密钥发往其他地址。 */
 	public static function sanitize_endpoint( string $url ) {
 		$url = trim( $url );
 		$parts = wp_parse_url( $url );
 		if ( '' === $url || ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), array( 'http', 'https' ), true ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['query'] ) || isset( $parts['fragment'] ) || preg_match( '/[\x00-\x20\x7f]/', $url ) ) {
-			return new WP_Error( 'hydra_ai_invalid_endpoint', __( '请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。', 'hydra-ai' ) );
+			return new WP_Error( 'hydra_ai_invalid_endpoint', __( '请填写有效的 HTTP 或 HTTPS 地址，不要包含账号、查询参数或片段。', 'hydra-ai' ) );
 		}
-		return rtrim( esc_url_raw( $url, array( 'http', 'https' ) ), '/' );
+		return esc_url_raw( $url, array( 'http', 'https' ) );
 	}
 
 	public static function connector_key_option( string $profile_id ): string {

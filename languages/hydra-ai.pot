@@ -249,12 +249,12 @@ msgstr ""
 msgid "确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:172
-msgid "端点地址无效。"
+#: includes/class-hydra-admin.php:115
+msgid "端点地址"
 msgstr ""
 
-#: includes/class-hydra-admin.php:115
-msgid "端点基础地址"
+#: includes/class-hydra-text-model.php:172
+msgid "端点地址无效。"
 msgstr ""
 
 #: includes/class-hydra-admin.php:102
@@ -305,12 +305,16 @@ msgstr ""
 msgid "请在右上方输入名称并点击“新增”创建配置。"
 msgstr ""
 
+#: includes/class-hydra-admin.php:115
+msgid "请填写完整的请求地址，插件不会自动追加任何路径。"
+msgstr ""
+
 #: includes/class-hydra-settings.php:193
 msgid "请填写接口名称和模型名称。"
 msgstr ""
 
-#: includes/class-hydra-settings.php:222
-msgid "请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。"
+#: includes/class-hydra-settings.php:219
+msgid "请填写有效的 HTTP 或 HTTPS 地址，不要包含账号、查询参数或片段。"
 msgstr ""
 
 #: includes/class-hydra-settings.php:237

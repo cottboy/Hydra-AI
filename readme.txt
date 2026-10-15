@@ -14,13 +14,15 @@ License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
 
 WordPress 7 的 AI Client 通过供应商协议连接外部 AI 服务。Hydra AI 只实现协议层，不把请求地址锁定到某一家厂商：
 
-* Chat Completions：`/chat/completions`
-* Responses：`/responses`
-* Anthropic Messages：`/messages`
+* Chat Completions
+* Responses
+* Anthropic Messages
+
+每个接口都要填写完整的请求地址，插件不会追加也不会改写任何路径。例如 Chat Completions 填 `https://api.openai.com/v1/chat/completions`，Anthropic Messages 填 `https://api.anthropic.com/v1/messages`。
 
 在“设置 → Hydra AI”右上方可以管理多个命名配置。安装后自动有“Hydra AI”配置；输入名称并点击“新增”即可创建新的独立配置。每个配置都会在 WordPress“连接”中注册为同名 AI 供应商，删除或重命名时同步更新连接。
 
-每个配置可以添加多个接口，按列表顺序尝试，失败后自动切换到下一个接口。每个接口可单独设置协议、端点、模型和 API Key。WordPress“连接”页面中的密钥只用于完成连接，不参与接口请求。
+每个配置可以添加多个接口，按列表顺序尝试，失败后自动切换到下一个接口。每个接口可单独设置协议、端点、模型和 API Key；端点要填完整请求地址。WordPress“连接”页面中的密钥只用于完成连接，不参与接口请求。
 
 协议层支持 WordPress AI Client 能表达的文本、多模态输入、工具调用、结构化输出、推理内容、拒答、停止原因、Token 用量、服务端扩展数据与 SSE 流式响应。协议不包含任何厂商专属的模型发现、嵌入、图片模型或语音模型接口。
 
@@ -57,7 +59,7 @@ WordPress 7 的 AI Client 通过供应商协议连接外部 AI 服务。Hydra AI
 
 1. 将插件上传到 `wp-content/plugins/hydra-ai` 并启用。
 2. 前往“设置 → Hydra AI”，选择“Hydra AI”配置并点击“添加接口”。
-3. 填写协议、端点、模型和密钥并保存。
+3. 填写协议、完整的端点地址、模型和密钥并保存。
 4. （可选）在“设置 → 连接”中为对应配置填写任意 API Key 完成连接；实际请求只使用 Hydra AI 设置中保存的接口密钥。
 
 == i18n ==

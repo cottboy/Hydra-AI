@@ -173,16 +173,14 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 			);
 		}
 
-		$url = rtrim( $endpoint, '/' ) . '/' . ltrim( $protocol->get_path(), '/' );
-
 		$params  = $protocol->build_params( $prompt, $this->getConfig(), (string) $entry['model'] );
 		$headers = $protocol->build_headers( $this->getConfig() );
 
 		if ( $protocol instanceof Hydra_Protocol_Anthropic ) {
-			return $this->generate_anthropic_result( $protocol, $url, $params, $headers, $api_key );
+			return $this->generate_anthropic_result( $protocol, $endpoint, $params, $headers, $api_key );
 		}
 
-		$response = $this->send_protocol_request( $protocol, $url, $params, $headers, $api_key );
+		$response = $this->send_protocol_request( $protocol, $endpoint, $params, $headers, $api_key );
 		$data     = $response->getData();
 		if ( is_array( $data ) ) {
 			return $protocol->parse_response( $data, $this->providerMetadata(), $this->metadata() );

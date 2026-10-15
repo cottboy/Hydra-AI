@@ -57,13 +57,6 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 	/**
 	 * @inheritDoc
 	 */
-	public function get_path(): string {
-		return 'messages';
-	}
-
-	/**
-	 * @inheritDoc
-	 */
 	public function build_params( array $prompt, ModelConfig $config, string $model_id ): array {
 		if (
 			null !== $config->getCandidateCount()

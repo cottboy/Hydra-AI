@@ -34,15 +34,6 @@ interface Hydra_Protocol_Interface {
 	public function get_id(): string;
 
 	/**
-	 * 获取请求路径，追加在端点基础地址之后。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string
-	 */
-	public function get_path(): string;
-
-	/**
 	 * 把消息与模型配置转换成请求参数。
 	 *
 	 * @since 1.0.0
