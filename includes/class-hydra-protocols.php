@@ -84,25 +84,4 @@ final class Hydra_Protocols {
 				return $protocol_id;
 		}
 	}
-
-	/**
-	 * 获取协议默认端点（基础地址）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param string $protocol_id 协议 ID。
-	 * @return string
-	 */
-	public static function get_default_endpoint( string $protocol_id ): string {
-		switch ( $protocol_id ) {
-			case 'chat':
-				return 'https://api.openai.com/v1';
-			case 'responses':
-				return 'https://api.openai.com/v1';
-			case 'anthropic':
-				return 'https://api.anthropic.com/v1';
-			default:
-				return '';
-		}
-	}
 }

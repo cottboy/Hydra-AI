@@ -193,7 +193,7 @@ class Hydra_Settings {
 		if ( '' === $name || '' === $model ) { return new WP_Error( 'hydra_ai_missing_entry_field', __( '请填写接口名称和模型名称。', 'hydra-ai' ) ); }
 		$api_key = trim( (string) ( $raw['api_key'] ?? '' ) );
 		$api_key = '' !== $api_key ? mb_substr( sanitize_text_field( $api_key ), 0, 500 ) : (string) ( $existing['api_key'] ?? '' );
-		$endpoint = self::sanitize_endpoint( (string) ( $raw['endpoint'] ?? '' ), $protocol );
+		$endpoint = self::sanitize_endpoint( (string) ( $raw['endpoint'] ?? '' ) );
 		if ( is_wp_error( $endpoint ) ) { return $endpoint; }
 		return array(
 			'id' => (string) ( $existing['id'] ?? self::generate_id( 'entry' ) ),
@@ -211,14 +211,11 @@ class Hydra_Settings {
 		return is_wp_error( $clean ) ? array() : $clean;
 	}
 
-	/** 校验接口地址。错误地址必须报错，避免把密钥发往其他默认地址。 */
-	public static function sanitize_endpoint( string $url, string $protocol ) {
+	/** 校验接口地址。错误地址必须报错，避免把密钥发往其他地址。 */
+	public static function sanitize_endpoint( string $url ) {
 		$url = trim( $url );
-		if ( '' === $url ) {
-			return Hydra_Protocols::get_default_endpoint( $protocol );
-		}
 		$parts = wp_parse_url( $url );
-		if ( ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), array( 'http', 'https' ), true ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['query'] ) || isset( $parts['fragment'] ) || preg_match( '/[\x00-\x20\x7f]/', $url ) ) {
+		if ( '' === $url || ! is_array( $parts ) || ! in_array( strtolower( $parts['scheme'] ?? '' ), array( 'http', 'https' ), true ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['query'] ) || isset( $parts['fragment'] ) || preg_match( '/[\x00-\x20\x7f]/', $url ) ) {
 			return new WP_Error( 'hydra_ai_invalid_endpoint', __( '请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。', 'hydra-ai' ) );
 		}
 		return rtrim( esc_url_raw( $url, array( 'http', 'https' ) ), '/' );
