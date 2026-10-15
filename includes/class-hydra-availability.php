@@ -11,11 +11,7 @@ class Hydra_Availability implements ProviderAvailabilityInterface {
 	public function __construct( string $profile_id ) { $this->profile_id = $profile_id; }
 
 	public function isConfigured(): bool {
-		foreach ( Hydra_Settings::get_enabled_entries( $this->profile_id ) as $entry ) {
-			if ( '' !== Hydra_Settings::resolve_api_key( $entry, $this->profile_id ) ) {
-				return true;
-			}
-		}
-		return false;
+		// 连接页的密钥仅用于完成连接；真实接口与密钥由插件管理，不在此检查或发起请求。
+		return null !== Hydra_Settings::get_profile( $this->profile_id );
 	}
 }

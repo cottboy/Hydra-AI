@@ -224,24 +224,6 @@ class Hydra_Settings {
 		return rtrim( esc_url_raw( $url, array( 'http', 'https' ) ), '/' );
 	}
 
-	/** 每个配置只读取自己的环境变量、常量或 WordPress 连接密钥。 */
-	public static function resolve_api_key( array $entry, ?string $profile_id = null ): string {
-		if ( '' !== (string) ( $entry['api_key'] ?? '' ) ) {
-			return (string) $entry['api_key'];
-		}
-		$profile_id = $profile_id ?: self::get_active_profile_id();
-		$key_name = strtoupper( str_replace( '-', '_', $profile_id ) ) . '_API_KEY';
-		$env = getenv( $key_name );
-		if ( is_string( $env ) && '' !== $env ) {
-			return $env;
-		}
-		if ( defined( $key_name ) && is_string( constant( $key_name ) ) && '' !== constant( $key_name ) ) {
-			return constant( $key_name );
-		}
-		$key = get_option( self::connector_key_option( $profile_id ), '' );
-		return is_string( $key ) ? $key : '';
-	}
-
 	public static function connector_key_option( string $profile_id ): string {
 		return 'connectors_ai_' . str_replace( '-', '_', sanitize_key( $profile_id ) ) . '_api_key';
 	}

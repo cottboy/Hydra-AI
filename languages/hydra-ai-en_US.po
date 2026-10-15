@@ -36,7 +36,7 @@ msgstr "Chat Completions does not support the requested output modality."
 msgid "Hydra AI"
 msgstr "Hydra AI"
 
-#: includes/class-hydra-text-model.php:91
+#: includes/class-hydra-text-model.php:90
 msgid "Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。"
 msgstr "Hydra AI has no enabled endpoints. Add one under Settings → Hydra AI."
 
@@ -156,6 +156,10 @@ msgstr "The endpoint does not exist or has been deleted."
 msgid "接口名称"
 msgstr "Endpoint name"
 
+#: includes/class-hydra-admin.php:115
+msgid "接口请求会使用这里保存的密钥；连接页填写的密钥不会用于请求。编辑时留空表示保持原值。"
+msgstr "Requests use the key saved here; the key entered on the Connections page is not used for requests. Leaving this blank while editing keeps the existing value."
+
 #: includes/class-hydra-admin.php:87
 msgid "操作"
 msgstr "Actions"
@@ -197,9 +201,9 @@ msgstr "The server returned an invalid streaming response."
 msgid "服务端返回的流式响应未完成。"
 msgstr "The server returned an incomplete streaming response."
 
-#: includes/class-hydra-text-model.php:171
-msgid "未配置 API Key（条目与连接器中均未提供）。"
-msgstr "No API key is configured."
+#: includes/class-hydra-text-model.php:165
+msgid "未配置接口密钥，请前往“设置 → Hydra AI”填写。"
+msgstr "No interface key is configured. Please enter one in Settings → Hydra AI."
 
 #: includes/class-hydra-admin.php:121
 msgid "权限不足。"
@@ -237,10 +241,6 @@ msgstr "Status"
 msgid "生成内容已达到输出长度限制。"
 msgstr "Generation reached the output length limit."
 
-#: includes/class-hydra-admin.php:115
-msgid "留空时使用该配置在 WordPress 连接中保存的密钥；编辑时留空表示保持原值。"
-msgstr "Leave empty to use the key saved for this configuration in WordPress Connections; when editing, empty keeps the existing value."
-
 #: includes/class-hydra-admin.php:26
 msgid "确定要删除“%s”吗？删除后不可恢复。"
 msgstr "Delete \"%s\"? This cannot be undone."
@@ -249,7 +249,7 @@ msgstr "Delete \"%s\"? This cannot be undone."
 msgid "确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。"
 msgstr "Delete configuration \"%s\"? Its WordPress connector will also be removed."
 
-#: includes/class-hydra-text-model.php:178
+#: includes/class-hydra-text-model.php:172
 msgid "端点地址无效。"
 msgstr "Invalid endpoint URL."
 
@@ -313,7 +313,7 @@ msgstr "Please enter an endpoint name and model name."
 msgid "请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。"
 msgstr "Enter a valid HTTP or HTTPS base URL without credentials, query parameters, or fragments."
 
-#: includes/class-hydra-settings.php:255
+#: includes/class-hydra-settings.php:237
 msgid "请填写配置名称。"
 msgstr "Please enter a configuration name."
 
@@ -347,8 +347,8 @@ msgstr "The remote file exceeds the 25MB size limit."
 msgid "连接失败：%s"
 msgstr "Connection failed: %s"
 
-#: includes/class-hydra-text-model.php:382
-#: includes/class-hydra-text-model.php:388
+#: includes/class-hydra-text-model.php:354
+#: includes/class-hydra-text-model.php:360
 msgid "连接成功。"
 msgstr "Connection successful."
 

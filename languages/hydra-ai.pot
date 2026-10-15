@@ -36,7 +36,7 @@ msgstr ""
 msgid "Hydra AI"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:91
+#: includes/class-hydra-text-model.php:90
 msgid "Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。"
 msgstr ""
 
@@ -156,6 +156,10 @@ msgstr ""
 msgid "接口名称"
 msgstr ""
 
+#: includes/class-hydra-admin.php:115
+msgid "接口请求会使用这里保存的密钥；连接页填写的密钥不会用于请求。编辑时留空表示保持原值。"
+msgstr ""
+
 #: includes/class-hydra-admin.php:87
 msgid "操作"
 msgstr ""
@@ -197,8 +201,8 @@ msgstr ""
 msgid "服务端返回的流式响应未完成。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:171
-msgid "未配置 API Key（条目与连接器中均未提供）。"
+#: includes/class-hydra-text-model.php:165
+msgid "未配置接口密钥，请前往“设置 → Hydra AI”填写。"
 msgstr ""
 
 #: includes/class-hydra-admin.php:121
@@ -237,10 +241,6 @@ msgstr ""
 msgid "生成内容已达到输出长度限制。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:115
-msgid "留空时使用该配置在 WordPress 连接中保存的密钥；编辑时留空表示保持原值。"
-msgstr ""
-
 #: includes/class-hydra-admin.php:26
 msgid "确定要删除“%s”吗？删除后不可恢复。"
 msgstr ""
@@ -249,7 +249,7 @@ msgstr ""
 msgid "确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:178
+#: includes/class-hydra-text-model.php:172
 msgid "端点地址无效。"
 msgstr ""
 
@@ -313,7 +313,7 @@ msgstr ""
 msgid "请填写有效的 HTTP 或 HTTPS 基础地址，不要包含账号、查询参数或片段。"
 msgstr ""
 
-#: includes/class-hydra-settings.php:255
+#: includes/class-hydra-settings.php:237
 msgid "请填写配置名称。"
 msgstr ""
 
@@ -347,8 +347,8 @@ msgstr ""
 msgid "连接失败：%s"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:382
-#: includes/class-hydra-text-model.php:388
+#: includes/class-hydra-text-model.php:354
+#: includes/class-hydra-text-model.php:360
 msgid "连接成功。"
 msgstr ""
 

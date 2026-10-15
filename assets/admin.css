@@ -28,8 +28,12 @@
 	font-size: 13px;
 }
 
-.hydra-profile-controls input {
-	width: 150px;
+.hydra-profile-controls input,
+.hydra-profile-controls select {
+	box-sizing: border-box;
+	width: 240px;
+	max-width: 100%;
+	flex: 0 0 auto;
 }
 
 /* 优先级列与拖拽手柄 */
@@ -242,9 +246,6 @@
 .hydra-page-title,
 .hydra-profile-controls {
 	flex-wrap: wrap;
-}
-.hydra-profile-controls select {
-	max-width: 240px;
 }
 #hydra-dialog-notice {
 	color: #b32d2e;

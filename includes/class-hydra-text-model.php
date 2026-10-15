@@ -14,7 +14,6 @@ use WordPress\AiClient\Messages\DTO\Message;
 use WordPress\AiClient\Messages\DTO\MessagePart;
 use WordPress\AiClient\Messages\Enums\MessageRoleEnum;
 use WordPress\AiClient\Providers\ApiBasedImplementation\AbstractApiBasedModel;
-use WordPress\AiClient\Providers\Http\DTO\ApiKeyRequestAuthentication;
 use WordPress\AiClient\Providers\Http\DTO\Request;
 use WordPress\AiClient\Providers\Http\DTO\RequestOptions;
 use WordPress\AiClient\Providers\Http\DTO\Response;
@@ -99,7 +98,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 		foreach ( $ordered as $entry ) {
 			try {
-				$result = $this->generate_for_entry( $entry, $prompt, $profile_id );
+				$result = $this->generate_for_entry( $entry, $prompt );
 
 				// 记录真实的故障转移事件：曾经失败、最终成功。
 				if ( $attempts ) {
@@ -157,18 +156,13 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	 * @return GenerativeAiResult
 	 * @throws Throwable 请求失败或响应无效时抛出。
 	 */
-	private function generate_for_entry( array $entry, array $prompt, ?string $profile_id = null ): GenerativeAiResult {
+	private function generate_for_entry( array $entry, array $prompt ): GenerativeAiResult {
 		$protocol = Hydra_Protocols::get( (string) $entry['protocol'] );
 
-		$profile_id = $profile_id ?: $this->providerMetadata()->getId();
-		$api_key = Hydra_Settings::resolve_api_key( $entry, $profile_id );
-		if ( '' === $api_key ) {
-			// 回退：检查注册表中是否为 Hydra AI 注入过密钥。
-			$api_key = $this->resolve_registry_api_key();
-		}
+		$api_key = (string) ( $entry['api_key'] ?? '' );
 		if ( '' === $api_key ) {
 			throw new RuntimeException(
-				__( '未配置 API Key（条目与连接器中均未提供）。', 'hydra-ai' )
+				__( '未配置接口密钥，请前往“设置 → Hydra AI”填写。', 'hydra-ai' )
 			);
 		}
 
@@ -278,27 +272,6 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 	}
 
 	/**
-	 * 从注册表读取注入给 Hydra AI 的 API Key（如有）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return string 未提供时返回空字符串。
-	 */
-	private function resolve_registry_api_key(): string {
-		try {
-			$auth = $this->getRequestAuthentication();
-		} catch ( RuntimeException $e ) {
-			return '';
-		}
-
-		if ( $auth instanceof ApiKeyRequestAuthentication ) {
-			return $auth->getApiKey();
-		}
-
-		return '';
-	}
-
-	/**
 	 * 构建一条故障转移尝试记录。
 	 *
 	 * @since 1.0.0
@@ -361,7 +334,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 				$provider_class::metadata()
 			);
 
-			// 绑定默认注册表的传输器与鉴权，保证与真实请求路径一致。
+			// 绑定默认注册表的传输器；请求密钥只取当前接口的配置。
 			AiClient::defaultRegistry()->bindModelDependencies( $model );
 
 			$options = new RequestOptions();
@@ -373,8 +346,7 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 			$model->generate_for_entry(
 				$entry,
-				array( new Message( MessageRoleEnum::user(), array( new MessagePart( 'Hi' ) ) ) ),
-				$profile_id
+				array( new Message( MessageRoleEnum::user(), array( new MessagePart( 'Hi' ) ) ) )
 			);
 
 			return array(
