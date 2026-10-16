@@ -181,7 +181,6 @@ class Hydra_Settings {
 		self::save_profiles( $kept );
 		if ( $active === $id ) { update_option( HYDRA_AI_ACTIVE_PROFILE_OPTION, isset( $kept[0]['id'] ) ? $kept[0]['id'] : '', false ); }
 		delete_option( self::connector_key_option( $id ) );
-		delete_transient( 'hydra_ai_last_failover_' . $id );
 		return true;
 	}
 
@@ -245,8 +244,4 @@ class Hydra_Settings {
 		$name = mb_substr( sanitize_text_field( trim( $name ) ), 0, 100 );
 		return '' !== $name ? $name : new WP_Error( 'hydra_ai_empty_profile_name', __( '请填写配置名称。', 'hydra-ai' ) );
 	}
-
-	public static function record_failover( array $summary, string $profile_id ): void { set_transient( 'hydra_ai_last_failover_' . $profile_id, $summary, DAY_IN_SECONDS ); }
-	public static function get_last_failover( string $profile_id ): ?array { $summary = get_transient( 'hydra_ai_last_failover_' . $profile_id );
-		return is_array( $summary ) ? $summary : null; }
 }

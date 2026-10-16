@@ -5,7 +5,6 @@ $profiles = get_option( 'hydra_ai_profiles', array() );
 if ( is_array( $profiles ) ) {
 	foreach ( $profiles as $profile ) {
 		if ( is_array( $profile ) && ! empty( $profile['id'] ) ) {
-			delete_transient( 'hydra_ai_last_failover_' . sanitize_key( (string) $profile['id'] ) );
 			delete_option( 'connectors_ai_' . str_replace( '-', '_', sanitize_key( (string) $profile['id'] ) ) . '_api_key' );
 		}
 	}

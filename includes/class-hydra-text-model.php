@@ -93,27 +93,15 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 
 		$ordered = $this->order_entries( $entries, $this->metadata()->getId() );
 
-		$attempts = array();
-		$last     = null;
+		$last = null;
 
 		foreach ( $ordered as $entry ) {
 			try {
-				$result = $this->generate_for_entry( $entry, $prompt );
-
-				// 记录真实的故障转移事件：曾经失败、最终成功。
-				if ( $attempts ) {
-					$attempts[] = $this->build_attempt( $entry, true, '' );
-					$this->record_summary( $attempts, true );
-				}
-
-				return $result;
+				return $this->generate_for_entry( $entry, $prompt );
 			} catch ( Throwable $e ) {
-				$attempts[] = $this->build_attempt( $entry, false, $e->getMessage() );
-				$last       = $e;
+				$last = $e;
 			}
 		}
-
-		$this->record_summary( $attempts, false );
 
 		// 保留最后一个异常的原始类型，便于调用方按 SDK 异常类型处理。
 		throw $last;
@@ -267,46 +255,6 @@ class Hydra_Text_Model extends AbstractApiBasedModel implements TextGenerationMo
 		}
 		ResponseUtil::throwIfNotSuccessful( $response );
 		return $response;
-	}
-
-	/**
-	 * 构建一条故障转移尝试记录。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<string,mixed> $entry   供应商条目。
-	 * @param bool                $ok      是否成功。
-	 * @param string              $message 错误信息。
-	 * @return array<string,mixed>
-	 */
-	private function build_attempt( array $entry, bool $ok, string $message ): array {
-		return array(
-			'name'     => (string) $entry['name'],
-			'protocol' => (string) $entry['protocol'],
-			'model'    => (string) $entry['model'],
-			'ok'       => $ok,
-			'message'  => $message,
-		);
-	}
-
-	/**
-	 * 保存故障转移摘要（供设置页展示）。
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<int,array<string,mixed>> $attempts 尝试记录。
-	 * @param bool                           $success  最终是否成功。
-	 * @return void
-	 */
-	private function record_summary( array $attempts, bool $success ): void {
-		Hydra_Settings::record_failover(
-			array(
-				'time'     => time(),
-				'success'  => $success,
-				'attempts' => $attempts,
-			),
-			$this->providerMetadata()->getId()
-		);
 	}
 
 	/**

@@ -53,7 +53,6 @@ class Hydra_Admin {
 		$profile = $profile_id ? Hydra_Settings::get_profile( $profile_id ) : null;
 		$entries = $profile ? Hydra_Settings::get_profile_entries( $profile_id ) : array();
 		$ai_missing = ! class_exists( '\WordPress\AiClient\AiClient' );
-		$last_report = Hydra_Settings::get_last_failover( $profile_id );
 		?>
 		<div class="wrap hydra-ai-wrap">
 			<h1 class="hydra-page-title">
@@ -78,8 +77,6 @@ class Hydra_Admin {
 			<p class="description"><?php esc_html_e( '请在右上方输入名称并点击“新增”创建配置。', 'hydra-ai' ); ?></p>
 			<?php endif; ?>
 			<?php if ( $ai_missing ) : ?><div class="notice notice-warning"><p><?php esc_html_e( '当前 WordPress 未加载 AI 客户端，连接注册暂时不可用。', 'hydra-ai' ); ?></p></div><?php endif; ?>
-			<?php if ( $last_report ) : $this->render_failover_report( $last_report );
-endif; ?>
 			<div id="hydra-notice" class="hydra-notice" hidden></div>
 			<?php if ( $profile ) : ?>
 				<p><button type="button" class="page-title-action" id="hydra-add-entry"><?php esc_html_e( '添加接口', 'hydra-ai' ); ?></button></p>
@@ -100,15 +97,6 @@ endforeach; ?>
 		$enabled = ! empty( $entry['enabled'] );
 		$has_key = '' !== (string) ( $entry['api_key'] ?? '' );
 		?><tr class="<?php echo esc_attr( $enabled ? '' : 'hydra-row-disabled' ); ?>" data-id="<?php echo esc_attr( $entry['id'] ); ?>" data-name="<?php echo esc_attr( $entry['name'] ); ?>" data-protocol="<?php echo esc_attr( $protocol ); ?>" data-endpoint="<?php echo esc_attr( $entry['endpoint'] ); ?>" data-model="<?php echo esc_attr( $entry['model'] ); ?>" data-enabled="<?php echo esc_attr( $enabled ? '1' : '0' ); ?>" data-has-key="<?php echo esc_attr( $has_key ? '1' : '0' ); ?>"><td><span class="hydra-order-num"><?php echo esc_html( (string) $order ); ?></span><span class="hydra-drag-handle dashicons dashicons-menu" aria-hidden="true"></span></td><td><strong class="hydra-name-text"><?php echo esc_html( $entry['name'] ); ?></strong></td><td><span class="hydra-badge hydra-badge-<?php echo esc_attr( $protocol ); ?>"><?php echo esc_html( Hydra_Protocols::get_label( $protocol ) ); ?></span></td><td><code><?php echo esc_html( $entry['model'] ); ?></code></td><td><label class="hydra-switch"><span class="screen-reader-text"><?php esc_html_e( '启用该接口', 'hydra-ai' ); ?></span><input type="checkbox" class="hydra-toggle-enabled" <?php checked( $enabled ); ?> /><span class="hydra-slider"></span></label></td><td><button type="button" class="button button-small hydra-test" data-id="<?php echo esc_attr( $entry['id'] ); ?>"><?php esc_html_e( '测试', 'hydra-ai' ); ?></button> <button type="button" class="button button-small hydra-edit"><?php esc_html_e( '编辑', 'hydra-ai' ); ?></button> <button type="button" class="button button-small hydra-delete"><?php esc_html_e( '删除', 'hydra-ai' ); ?></button><span class="hydra-test-result" aria-live="polite"></span></td></tr><?php
-	}
-
-	private function render_failover_report( array $report ): void {
-		$attempts = is_array( $report['attempts'] ?? null ) ? $report['attempts'] : array();
-		if ( ! $attempts ) { return; }
-		$lines = array();
-		foreach ( $attempts as $attempt ) { if ( is_array( $attempt ) ) { $lines[] = ( ! empty( $attempt['ok'] ) ? '✓ ' : '✗ ' ) . (string) ( $attempt['name'] ?? '' ) . ( ! empty( $attempt['message'] ) ? ' — ' . (string) $attempt['message'] : '' ); }
-		}
-		?><div class="notice notice-<?php echo esc_attr( ! empty( $report['success'] ) ? 'success' : 'error' ); ?> hydra-report"><p><strong><?php esc_html_e( '最近一次接口切换结果：', 'hydra-ai' ); ?></strong></p><ul><?php foreach ( $lines as $line ) : ?><li><?php echo esc_html( $line ); ?></li><?php endforeach; ?></ul></div><?php
 	}
 
 	private function render_dialog(): void {

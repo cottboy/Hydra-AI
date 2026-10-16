@@ -181,11 +181,6 @@
 	margin: 12px 0;
 }
 
-.hydra-report ul {
-	list-style: disc;
-	margin-left: 20px;
-}
-
 /* 空状态 */
 .hydra-empty-state {
 	margin-top: 1em;
