@@ -21,7 +21,7 @@ use WordPress\AiClient\Providers\Models\Enums\OptionEnum;
  * 模型元数据目录。
  *
  * Hydra 的“模型”直接来自用户配置的供应商条目：每个条目暴露其模型 ID，
- * 相同模型 ID 合并其配置协议的能力，接口名称采用优先级最高的条目。
+ * 相同模型 ID 只声明一次，显示名就是模型 ID 本身，能力与选项按全部条目合并。
  *
  * @since 1.0.0
  */
@@ -50,16 +50,9 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 		}
 
 		foreach ( $grouped as $model_id => $entries ) {
-			$entry = $entries[0];
-
-			$name = $model_id;
-			if ( isset( $entry['name'] ) && '' !== (string) $entry['name'] ) {
-				$name = sprintf( '%s（%s）', $model_id, (string) $entry['name'] );
-			}
-
 			$models[] = new ModelMetadata(
 				$model_id,
-				$name,
+				$model_id,
 				$this->supported_capabilities( $entries ),
 				$this->supported_options( $entries )
 			);
