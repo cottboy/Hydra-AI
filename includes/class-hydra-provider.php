@@ -56,7 +56,9 @@ class Hydra_Provider extends AbstractApiProvider {
 		$class = 'Hydra_Profile_Provider_' . strtoupper( substr( md5( $profile_id ), 0, 16 ) );
 		if ( ! class_exists( $class, false ) ) {
 			// AI Client 要求每个供应商对应独立类；类名只由散列生成，配置 ID 按 PHP 字面量转义。
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- 这里用来生成带转义的 PHP 字面量，不是调试输出。
 			$quoted = var_export( $profile_id, true );
+			// phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- 供应商的唯一键是类名，独立类只能运行时生成；配置 ID 先经 sanitize_key() 再散列成类名，注入不进代码。
 			eval( 'class ' . $class . ' extends Hydra_Provider { protected static function createProviderMetadata(): \\WordPress\\AiClient\\Providers\\DTO\\ProviderMetadata { return Hydra_Provider::metadata_for_profile(' . $quoted . '); } protected static function createProviderAvailability(): \\WordPress\\AiClient\\Providers\\Contracts\\ProviderAvailabilityInterface { return Hydra_Provider::availability_for_profile(' . $quoted . '); } protected static function createModelMetadataDirectory(): \\WordPress\\AiClient\\Providers\\Contracts\\ModelMetadataDirectoryInterface { return new Hydra_Model_Directory(' . $quoted . '); } }' );
 		}
 		return $class;

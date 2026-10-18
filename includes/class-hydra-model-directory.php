@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- 异常消息只经 JSON 接口返回并在页面以纯文本显示，不拼进网页内容。
+
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
 use WordPress\AiClient\Files\Enums\FileTypeEnum;
 use WordPress\AiClient\Files\Enums\MediaOrientationEnum;
@@ -85,7 +87,11 @@ class Hydra_Model_Directory implements ModelMetadataDirectoryInterface {
 		}
 
 		throw new InvalidArgumentException(
-			sprintf( __( '模型“%s”未在当前配置中定义。', 'hydra-ai' ), $model_id )
+			sprintf(
+				/* translators: %s: 模型 ID。 */
+				__( '模型“%s”未在当前配置中定义。', 'hydra-ai' ),
+				$model_id
+			)
 		);
 	}
 

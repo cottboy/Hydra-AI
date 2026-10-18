@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- 异常消息只经 JSON 接口返回并在页面以纯文本显示，不拼进网页内容。
+
 use WordPress\AiClient\Common\Exception\InvalidArgumentException;
 use WordPress\AiClient\Common\Exception\RuntimeException;
 use WordPress\AiClient\Common\Exception\TokenLimitReachedException;
@@ -139,7 +141,11 @@ class Hydra_Protocol_Anthropic implements Hydra_Protocol_Interface {
 			}
 			if ( array_key_exists( $key, $params ) ) {
 				throw new InvalidArgumentException(
-					sprintf( __( '自定义选项“%s”与已有参数冲突。', 'hydra-ai' ), $key )
+					sprintf(
+						/* translators: %s: 自定义选项的键名。 */
+						__( '自定义选项“%s”与已有参数冲突。', 'hydra-ai' ),
+						$key
+					)
 				);
 			}
 			$params[ $key ] = $value;

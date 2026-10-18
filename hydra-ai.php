@@ -50,11 +50,13 @@ require_once HYDRA_AI_DIR . 'includes/class-hydra-admin.php';
  * @return void
  */
 function hydra_ai_load_textdomain(): void {
+	// phpcs:disable PluginCheck.CodeAnalysis.DiscouragedFunctions -- 翻译文件打包在插件自己的 languages 目录内，WordPress 只会自动加载 wp-content/languages/plugins/，去掉这句就没有翻译。
 	load_plugin_textdomain(
 		'hydra-ai',
 		false,
 		dirname( plugin_basename( HYDRA_AI_FILE ) ) . '/languages'
 	);
+	// phpcs:enable PluginCheck.CodeAnalysis.DiscouragedFunctions
 }
 add_action( 'init', 'hydra_ai_load_textdomain', 1 );
 

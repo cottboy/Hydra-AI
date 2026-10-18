@@ -23,10 +23,14 @@ class Hydra_Admin {
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'nonce' => wp_create_nonce( self::NONCE_ACTION ),
 			'i18n' => array(
+				// translators: %s: 接口名称，由页面脚本在确认时填入。
 				'confirmDelete' => __( '确定要删除“%s”吗？删除后不可恢复。', 'hydra-ai' ),
+				// translators: %s: 配置名称，由页面脚本在确认时填入。
 				'confirmProfileDelete' => __( '确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。', 'hydra-ai' ),
 				'reorderFailed' => __( '排序保存失败，请刷新页面重试。', 'hydra-ai' ),
+				// translators: %s: 接口返回的说明文字，由页面脚本填入。
 				'testSuccess' => __( '连接成功：%s', 'hydra-ai' ),
+				// translators: %s: 接口返回的说明文字，由页面脚本填入。
 				'testFailed' => __( '连接失败：%s', 'hydra-ai' ),
 				'keyExists' => __( '已设置密钥', 'hydra-ai' ),
 				'networkError' => __( '请求失败，请检查网络后重试。', 'hydra-ai' ),
@@ -38,6 +42,7 @@ class Hydra_Admin {
 	}
 
 	private function current_profile_id(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 只决定页面展示哪个配置，取值前有权限校验且必须匹配已存在的配置。
 		$id = isset( $_GET['profile'] ) && is_string( $_GET['profile'] ) ? sanitize_key( wp_unslash( $_GET['profile'] ) ) : '';
 		if ( $id && Hydra_Settings::get_profile( $id ) ) {
 			Hydra_Settings::set_active_profile( $id );
@@ -115,6 +120,7 @@ endforeach; ?>
 	}
 
 	/** 拒绝数组等非文本输入，并去掉 WordPress 添加的转义。 */
+	// phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- 安全凭证由调用方首行的 guard() 校验，消毒由调用方 sanitize_key() 或 Hydra_Settings::sanitize_entry() 完成。
 	private function posted_text( string $key ): string {
 		if ( ! isset( $_POST[ $key ] ) ) {
 			return '';
@@ -124,6 +130,7 @@ endforeach; ?>
 		}
 		return wp_unslash( $_POST[ $key ] );
 	}
+	// phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 	private function posted_profile_id(): string {
 		$id = sanitize_key( $this->posted_text( 'profile_id' ) );
@@ -213,7 +220,8 @@ endforeach; ?>
 	public function ajax_reorder(): void {
 		$this->guard();
 		$profile_id = $this->posted_profile_id();
-		$order      = $_POST['order'] ?? null;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- 安全凭证已由 guard() 校验；排序值只用来匹配已存在条目的 ID，原值不落库。
+		$order      = isset( $_POST['order'] ) ? wp_unslash( $_POST['order'] ) : null;
 		$entries    = Hydra_Settings::get_profile_entries( $profile_id );
 		if ( ! is_array( $order ) || count( $order ) !== count( $entries ) || array_values( $order ) !== $order ) {
 			wp_send_json_error( array( 'message' => __( '排序数据不完整。', 'hydra-ai' ) ), 400 );

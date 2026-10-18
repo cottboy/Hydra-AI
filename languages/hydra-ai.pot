@@ -1,103 +1,104 @@
 msgid ""
 msgstr "Project-Id-Version: Hydra AI 2.0.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nX-Domain: hydra-ai\n"
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "API Key"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
-#: includes/class-hydra-protocols.php:82
+#: includes/class-hydra-admin.php:108
+#: includes/class-hydra-protocols.php:90
 msgid "Anthropic Messages"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
-#: includes/class-hydra-protocols.php:78
+#: includes/class-hydra-admin.php:108
+#: includes/class-hydra-protocols.php:86
 msgid "Chat Completions"
 msgstr ""
 
-#: includes/class-hydra-protocol-chat.php:59
+#: includes/class-hydra-protocol-chat.php:61
 msgid "Chat Completions 协议不支持本次请求中的配置选项。"
 msgstr ""
 
-#: includes/class-hydra-protocol-chat.php:136
+#: includes/class-hydra-protocol-chat.php:138
 msgid "Chat Completions 协议不支持网页搜索域名筛选。"
 msgstr ""
 
-#: includes/class-hydra-protocol-chat.php:150
+#: includes/class-hydra-protocol-chat.php:152
 msgid "Chat Completions 协议不支持请求该输出模态。"
 msgstr ""
 
 #: includes/class-hydra-admin.php:10
-#: includes/class-hydra-admin.php:10
-#: includes/class-hydra-admin.php:59
+#: includes/class-hydra-admin.php:64
 #: includes/class-hydra-provider.php:39
 #: includes/class-hydra-settings.php:39
 #: includes/class-hydra-settings.php:59
 msgid "Hydra AI"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:90
+#: includes/class-hydra-text-model.php:92
 msgid "Hydra AI 尚未配置任何已启用的供应商，请前往“设置 → Hydra AI”添加。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:72
+#: includes/class-hydra-protocol-anthropic.php:74
 msgid "Messages 协议不支持本次请求中的配置选项。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:414
+#: includes/class-hydra-protocol-anthropic.php:420
 msgid "Messages 协议不能同时设置允许和排除的网页搜索域名。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:79
+#: includes/class-hydra-protocol-anthropic.php:81
 msgid "Messages 协议仅支持文本输出。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
-#: includes/class-hydra-protocols.php:80
+#: includes/class-hydra-admin.php:108
+#: includes/class-hydra-protocols.php:88
 msgid "Responses API"
 msgstr ""
 
-#: includes/class-hydra-protocol-responses.php:412
+#: includes/class-hydra-protocol-responses.php:418
 msgid "Responses 协议不支持排除网页搜索域名。"
 msgstr ""
 
-#: includes/class-hydra-protocol-responses.php:61
-#: includes/class-hydra-protocol-responses.php:66
+#: includes/class-hydra-protocol-responses.php:63
+#: includes/class-hydra-protocol-responses.php:68
 msgid "Responses 协议不支持本次请求中的配置选项。"
 msgstr ""
 
-#: includes/class-hydra-protocol-responses.php:168
+#: includes/class-hydra-protocol-responses.php:174
 msgid "Responses 协议不支持请求该输出模态。"
 msgstr ""
 
-#: includes/class-hydra-files.php:104
+#. translators: %s: 错误信息。
+#: includes/class-hydra-files.php:106
 msgid "下载远端文件失败：%s"
 msgstr ""
 
-#: includes/class-hydra-files.php:115
+#. translators: %d: HTTP 状态码。
+#: includes/class-hydra-files.php:117
 msgid "下载远端文件失败：HTTP %d。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
+#: includes/class-hydra-admin.php:89
 msgid "优先级"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "保存"
 msgstr ""
 
-#: includes/class-hydra-admin.php:61
-#: includes/class-hydra-admin.php:62
+#: includes/class-hydra-admin.php:66
+#: includes/class-hydra-admin.php:67
 msgid "切换配置"
 msgstr ""
 
-#: includes/class-hydra-admin.php:70
-#: includes/class-hydra-admin.php:99
+#: includes/class-hydra-admin.php:75
+#: includes/class-hydra-admin.php:104
 msgid "删除"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:89
+#: includes/class-hydra-admin.php:108
 msgid "协议"
 msgstr ""
 
@@ -105,159 +106,160 @@ msgstr ""
 msgid "协议类型无效。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "取消"
 msgstr ""
 
-#: includes/class-hydra-admin.php:99
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:104
+#: includes/class-hydra-admin.php:108
 msgid "启用该接口"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:521
-#: includes/class-hydra-protocol-anthropic.php:597
-#: includes/class-hydra-protocol-chat.php:715
-#: includes/class-hydra-protocol-responses.php:579
+#: includes/class-hydra-protocol-anthropic.php:527
+#: includes/class-hydra-protocol-anthropic.php:603
+#: includes/class-hydra-protocol-chat.php:721
+#: includes/class-hydra-protocol-responses.php:585
 msgid "工具调用参数必须是有效的 JSON 对象。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:31
+#: includes/class-hydra-admin.php:35
 msgid "已设置密钥"
 msgstr ""
 
-#: includes/class-hydra-admin.php:79
+#: includes/class-hydra-admin.php:84
 msgid "当前 WordPress 未加载 AI 客户端，连接注册暂时不可用。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:75
+#: includes/class-hydra-admin.php:80
 msgid "当前配置会在 WordPress 连接中注册为同名供应商。下面的接口按顺序尝试，失败时自动使用下一个。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:28
+#: includes/class-hydra-admin.php:30
 msgid "排序保存失败，请刷新页面重试。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:219
+#: includes/class-hydra-admin.php:227
 msgid "排序数据不完整。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:225
+#: includes/class-hydra-admin.php:233
 msgid "排序数据无效。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:178
-#: includes/class-hydra-admin.php:207
-#: includes/class-hydra-admin.php:240
+#: includes/class-hydra-admin.php:185
+#: includes/class-hydra-admin.php:214
+#: includes/class-hydra-admin.php:248
 msgid "接口不存在或已被删除。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:89
+#: includes/class-hydra-admin.php:108
 msgid "接口名称"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "接口请求会使用这里保存的密钥；连接页填写的密钥不会用于请求。编辑时留空表示保持原值。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
+#: includes/class-hydra-admin.php:89
 msgid "操作"
 msgstr ""
 
-#: includes/class-hydra-files.php:89
+#: includes/class-hydra-files.php:91
 msgid "文件 URL 无效。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:297
-#: includes/class-hydra-protocol-anthropic.php:305
-#: includes/class-hydra-protocol-anthropic.php:345
-#: includes/class-hydra-protocol-chat.php:347
-#: includes/class-hydra-protocol-chat.php:354
-#: includes/class-hydra-protocol-responses.php:344
-#: includes/class-hydra-protocol-responses.php:351
+#: includes/class-hydra-protocol-anthropic.php:303
+#: includes/class-hydra-protocol-anthropic.php:311
+#: includes/class-hydra-protocol-anthropic.php:351
+#: includes/class-hydra-protocol-chat.php:353
+#: includes/class-hydra-protocol-chat.php:360
+#: includes/class-hydra-protocol-responses.php:350
+#: includes/class-hydra-protocol-responses.php:357
 msgid "文件消息部件缺少文件数据。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:69
+#: includes/class-hydra-admin.php:74
 msgid "新增"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:548
-#: includes/class-hydra-protocol-chat.php:556
-#: includes/class-hydra-protocol-responses.php:467
+#: includes/class-hydra-protocol-anthropic.php:554
+#: includes/class-hydra-protocol-chat.php:562
+#: includes/class-hydra-protocol-responses.php:473
 msgid "服务端返回了未知错误。"
 msgstr ""
 
-#: includes/class-hydra-stream.php:61
+#: includes/class-hydra-stream.php:63
 msgid "服务端返回的流式响应无效。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:514
-#: includes/class-hydra-protocol-chat.php:531
+#: includes/class-hydra-protocol-anthropic.php:520
+#: includes/class-hydra-protocol-chat.php:537
 msgid "服务端返回的流式响应未完成。"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:153
+#: includes/class-hydra-text-model.php:155
 msgid "未配置接口密钥，请前往“设置 → Hydra AI”填写。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:109
+#: includes/class-hydra-admin.php:114
 msgid "权限不足。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:89
+#: includes/class-hydra-admin.php:108
 msgid "模型"
 msgstr ""
 
-#: includes/class-hydra-model-directory.php:95
+#. translators: %s: 模型 ID。
+#: includes/class-hydra-model-directory.php:92
 msgid "模型“%s”未在当前配置中定义。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:99
+#: includes/class-hydra-admin.php:104
 msgid "测试"
 msgstr ""
 
-#: includes/class-hydra-admin.php:33
+#: includes/class-hydra-admin.php:37
 msgid "测试中…"
 msgstr ""
 
-#: includes/class-hydra-admin.php:34
-#: includes/class-hydra-admin.php:82
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:38
+#: includes/class-hydra-admin.php:87
+#: includes/class-hydra-admin.php:108
 msgid "添加接口"
 msgstr ""
 
-#: includes/class-hydra-admin.php:84
+#: includes/class-hydra-admin.php:89
 msgid "状态"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:553
-#: includes/class-hydra-protocol-responses.php:472
+#: includes/class-hydra-protocol-anthropic.php:559
+#: includes/class-hydra-protocol-responses.php:478
 msgid "生成内容已达到输出长度限制。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:26
+#: includes/class-hydra-admin.php:27
 msgid "确定要删除“%s”吗？删除后不可恢复。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:27
+#: includes/class-hydra-admin.php:29
 msgid "确定要删除配置“%s”吗？WordPress 连接中的对应供应商也会消失。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "端点地址"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:160
+#: includes/class-hydra-text-model.php:162
 msgid "端点地址无效。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:99
+#: includes/class-hydra-admin.php:104
 msgid "编辑"
 msgstr ""
 
-#: includes/class-hydra-admin.php:35
+#: includes/class-hydra-admin.php:39
 msgid "编辑接口"
 msgstr ""
 
@@ -265,13 +267,14 @@ msgstr ""
 msgid "自定义 AI 供应商端点，支持 Chat Completions、Responses 和 Anthropic Messages 协议。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:142
-#: includes/class-hydra-protocol-chat.php:174
-#: includes/class-hydra-protocol-responses.php:123
+#. translators: %s: 自定义选项的键名。
+#: includes/class-hydra-protocol-anthropic.php:146
+#: includes/class-hydra-protocol-chat.php:178
+#: includes/class-hydra-protocol-responses.php:127
 msgid "自定义选项“%s”与已有参数冲突。"
 msgstr ""
 
-#: includes/class-hydra-protocol-responses.php:138
+#: includes/class-hydra-protocol-responses.php:144
 msgid "自定义选项与已有参数冲突。"
 msgstr ""
 
@@ -279,29 +282,30 @@ msgstr ""
 msgid "设置"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:375
-#: includes/class-hydra-protocol-chat.php:388
-#: includes/class-hydra-protocol-responses.php:379
+#. translators: %s: MIME 类型。
+#: includes/class-hydra-protocol-anthropic.php:381
+#: includes/class-hydra-protocol-chat.php:394
+#: includes/class-hydra-protocol-responses.php:385
 msgid "该协议不支持此输入文件类型：%s"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:320
+#: includes/class-hydra-protocol-anthropic.php:326
 msgid "该协议的内联图片仅支持 JPEG、PNG、GIF 或 WebP。"
 msgstr ""
 
-#: includes/class-hydra-protocol-anthropic.php:359
+#: includes/class-hydra-protocol-anthropic.php:365
 msgid "该协议的文档输入仅支持 PDF 或纯文本。"
 msgstr ""
 
-#: includes/class-hydra-files.php:153
+#: includes/class-hydra-files.php:155
 msgid "该协议的音频输入仅支持 WAV 或 MP3 格式。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:77
+#: includes/class-hydra-admin.php:82
 msgid "请在右上方输入名称并点击“新增”创建配置。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:103
+#: includes/class-hydra-admin.php:108
 msgid "请填写完整的请求地址，插件不会自动追加任何路径。"
 msgstr ""
 
@@ -317,12 +321,12 @@ msgstr ""
 msgid "请填写配置名称。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:32
+#: includes/class-hydra-admin.php:36
 msgid "请求失败，请检查网络后重试。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:112
-#: includes/class-hydra-admin.php:123
+#: includes/class-hydra-admin.php:117
+#: includes/class-hydra-admin.php:129
 msgid "请求数据无效。"
 msgstr ""
 
@@ -331,41 +335,47 @@ msgstr ""
 msgid "这个配置名称已经存在。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:88
+#: includes/class-hydra-admin.php:93
 msgid "这个配置还没有接口，请点击“添加接口”。"
 msgstr ""
 
-#: includes/class-hydra-files.php:126
+#: includes/class-hydra-files.php:128
 msgid "远端文件内容为空。"
 msgstr ""
 
-#: includes/class-hydra-files.php:123
+#: includes/class-hydra-files.php:125
 msgid "远端文件超过 25MB 大小限制。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:30
+#: includes/class-hydra-admin.php:34
 msgid "连接失败：%s"
 msgstr ""
 
-#: includes/class-hydra-text-model.php:300
-#: includes/class-hydra-text-model.php:306
+#: includes/class-hydra-text-model.php:302
+#: includes/class-hydra-text-model.php:308
 msgid "连接成功。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:29
+#: includes/class-hydra-admin.php:32
 msgid "连接成功：%s"
 msgstr ""
 
-#: includes/class-hydra-admin.php:131
+#: includes/class-hydra-admin.php:138
 #: includes/class-hydra-settings.php:165
 msgid "配置不存在。"
 msgstr ""
 
-#: includes/class-hydra-admin.php:67
-#: includes/class-hydra-admin.php:68
+#: includes/class-hydra-admin.php:72
+#: includes/class-hydra-admin.php:73
 msgid "配置名称"
 msgstr ""
 
-#: includes/class-hydra-admin.php:71
+#: includes/class-hydra-admin.php:76
 msgid "重命名"
 msgstr ""
+
+#. translators: %s: 协议标识。
+#: includes/class-hydra-protocols.php:54
+msgid "未知协议：%s"
+msgstr ""
+

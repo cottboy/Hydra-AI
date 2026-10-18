@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- 异常消息只经 JSON 接口返回并在页面以纯文本显示，不拼进网页内容。
+
 /**
  * 协议注册表。
  *
@@ -46,7 +48,13 @@ final class Hydra_Protocols {
 				self::$instances[ $protocol_id ] = new Hydra_Protocol_Anthropic();
 				break;
 			default:
-				throw new InvalidArgumentException( sprintf( '未知协议：%s', $protocol_id ) );
+				throw new InvalidArgumentException(
+					sprintf(
+						/* translators: %s: 协议标识。 */
+						__( '未知协议：%s', 'hydra-ai' ),
+						$protocol_id
+					)
+				);
 		}
 
 		return self::$instances[ $protocol_id ];
