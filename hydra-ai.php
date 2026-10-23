@@ -1,13 +1,15 @@
 <?php
 /**
  * Plugin Name:  Hydra AI
+ * Plugin URI: https://github.com/cottboy/hydra-ai
  * Description:  在 WordPress 连接中注册多个自定义 AI 供应商，支持 Chat Completions、Responses 与 Anthropic Messages 协议，可自由配置端点并自动故障转移。
  * Version:      2.0.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
- * Author:       Hydra AI
- * License:      GPL-2.0-or-later
- * License URI:  https://spdx.org/licenses/GPL-2.0-or-later.html
+ * Author: cottboy
+ * Author URI: https://github.com/cottboy
+ * License:      GPLv3 or later
+ * License URI:  https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain:  hydra-ai
  * Domain Path:  /languages
  *

@@ -1,12 +1,12 @@
 === Hydra AI ===
-Contributors: hydra-ai
+Contributors: cottboy
 Tags: ai, openai, anthropic, connector, failover
 Requires at least: 7.0
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.0.0
-License: GPL-2.0-or-later
-License URI: https://spdx.org/licenses/GPL-2.0-or-later.html
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 在 WordPress 连接中注册多个自定义 AI 供应商，适配三种通用协议，并支持多接口故障转移。
 
@@ -34,7 +34,6 @@ WordPress 7 的 AI Client 通过供应商协议连接外部 AI 服务。Hydra AI
 
 * AI Provider for OpenAI：https://wordpress.org/plugins/ai-provider-for-openai/
 * AI Provider for Anthropic：https://wordpress.org/plugins/ai-provider-for-anthropic/
-* AI Provider for Google：https://wordpress.org/plugins/ai-provider-for-google/ 。其 Gemini 专有协议不属于本插件的三种协议范围。
 
 实现依据：
 
@@ -61,13 +60,6 @@ WordPress 7 的 AI Client 通过供应商协议连接外部 AI 服务。Hydra AI
 2. 前往“设置 → Hydra AI”，选择“Hydra AI”配置并点击“添加接口”。
 3. 填写协议、完整的端点地址、模型和密钥并保存。
 4. 启用接口后，对应配置会自动出现在支持 WordPress AI Client 的插件中；没有填写密钥或全部停用接口的配置不可用。
-
-== i18n ==
-
-插件源语言为简体中文，界面文字通过 `languages/` 下的翻译文件提供：
-
-* `hydra-ai.pot`：翻译模板。
-* `hydra-ai-en_US.po/.mo`：英文翻译。
 
 == Changelog ==
 
